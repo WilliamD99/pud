@@ -6,9 +6,15 @@ import path from 'path'
 import { buildConfig } from 'payload'
 import { fileURLToPath } from 'url'
 import sharp from 'sharp'
-
 import { Users } from './collections/Users'
 import { Media } from './collections/Media'
+import { Technicians } from './collections/Technicians'
+import { Services } from './collections/Services'
+import { Appointments } from './collections/Appointments'
+import { Jobs } from './collections/Jobs'
+import { EmailConfig } from './global/email'
+import { Customers } from './collections/Customers'
+import { AppointmentsCollectionConfig } from './global/collection'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -20,7 +26,8 @@ export default buildConfig({
       baseDir: path.resolve(dirname),
     },
   },
-  collections: [Users, Media],
+
+  collections: [Users, Media, Technicians, Services, Appointments, Jobs, Customers],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {
@@ -36,4 +43,7 @@ export default buildConfig({
     payloadCloudPlugin(),
     // storage-adapter-placeholder
   ],
+  globals: [EmailConfig, AppointmentsCollectionConfig],
+  csrf: [], // whitelist of domains to allow cookie auth from
+  cors: ['http://localhost:3000', 'localhost:3001'],
 })

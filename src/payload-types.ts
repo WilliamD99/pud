@@ -69,6 +69,11 @@ export interface Config {
   collections: {
     users: User;
     media: Media;
+    technicians: Technician;
+    services: Service;
+    appointments: Appointment;
+    jobs: Job;
+    customers: Customer;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
     'payload-migrations': PayloadMigration;
@@ -77,15 +82,26 @@ export interface Config {
   collectionsSelect: {
     users: UsersSelect<false> | UsersSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
+    technicians: TechniciansSelect<false> | TechniciansSelect<true>;
+    services: ServicesSelect<false> | ServicesSelect<true>;
+    appointments: AppointmentsSelect<false> | AppointmentsSelect<true>;
+    jobs: JobsSelect<false> | JobsSelect<true>;
+    customers: CustomersSelect<false> | CustomersSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
     'payload-migrations': PayloadMigrationsSelect<false> | PayloadMigrationsSelect<true>;
   };
   db: {
-    defaultIDType: string;
+    defaultIDType: number;
   };
-  globals: {};
-  globalsSelect: {};
+  globals: {
+    emailSettings: EmailSetting;
+    collectionConfig: CollectionConfig;
+  };
+  globalsSelect: {
+    emailSettings: EmailSettingsSelect<false> | EmailSettingsSelect<true>;
+    collectionConfig: CollectionConfigSelect<false> | CollectionConfigSelect<true>;
+  };
   locale: null;
   user: User & {
     collection: 'users';
@@ -118,7 +134,12 @@ export interface UserAuthOperations {
  * via the `definition` "users".
  */
 export interface User {
-  id: string;
+  id: number;
+  name?: string | null;
+  /**
+   * Creating a new user will also create a record either in the Technician Schema or the Customer Schema
+   */
+  role: 'admin' | 'staff' | 'customer';
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -142,7 +163,7 @@ export interface User {
  * via the `definition` "media".
  */
 export interface Media {
-  id: string;
+  id: number;
   alt: string;
   updatedAt: string;
   createdAt: string;
@@ -158,23 +179,139 @@ export interface Media {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "technicians".
+ */
+export interface Technician {
+  id: number;
+  techniciansId?: string | null;
+  name: string;
+  profilePicture?: (number | null) | Media;
+  email: string;
+  phone?: string | null;
+  address?: string | null;
+  services?: (number | Service)[] | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "services".
+ */
+export interface Service {
+  id: number;
+  servicesId?: string | null;
+  name?: string | null;
+  description?: string | null;
+  category?: ('skincare' | 'hair' | 'nails' | 'makeup') | null;
+  price: number;
+  jobs?: (number | Job)[] | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "jobs".
+ */
+export interface Job {
+  id: number;
+  jobsId?: string | null;
+  name?: string | null;
+  service: number | Service;
+  technician: number | Technician;
+  status?: ('pending' | 'in_progress' | 'completed' | 'cancelled') | null;
+  notes?: string | null;
+  /**
+   * To assign this to an appointment, please do it in the appointment collection
+   */
+  appointment?: (number | null) | Appointment;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "appointments".
+ */
+export interface Appointment {
+  id: number;
+  appointmentsId?: string | null;
+  time: string;
+  status?: ('pending' | 'confirmed' | 'cancelled' | 'completed') | null;
+  notes?: string | null;
+  customer?: (number | null) | Customer;
+  jobs: {
+    job?: (number | null) | Job;
+    id?: string | null;
+  }[];
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "customers".
+ */
+export interface Customer {
+  id: number;
+  customersId?: string | null;
+  name: string;
+  email: string;
+  phone?: string | null;
+  notes?: {
+    root: {
+      type: string;
+      children: {
+        type: string;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-locked-documents".
  */
 export interface PayloadLockedDocument {
-  id: string;
+  id: number;
   document?:
     | ({
         relationTo: 'users';
-        value: string | User;
+        value: number | User;
       } | null)
     | ({
         relationTo: 'media';
-        value: string | Media;
+        value: number | Media;
+      } | null)
+    | ({
+        relationTo: 'technicians';
+        value: number | Technician;
+      } | null)
+    | ({
+        relationTo: 'services';
+        value: number | Service;
+      } | null)
+    | ({
+        relationTo: 'appointments';
+        value: number | Appointment;
+      } | null)
+    | ({
+        relationTo: 'jobs';
+        value: number | Job;
+      } | null)
+    | ({
+        relationTo: 'customers';
+        value: number | Customer;
       } | null);
   globalSlug?: string | null;
   user: {
     relationTo: 'users';
-    value: string | User;
+    value: number | User;
   };
   updatedAt: string;
   createdAt: string;
@@ -184,10 +321,10 @@ export interface PayloadLockedDocument {
  * via the `definition` "payload-preferences".
  */
 export interface PayloadPreference {
-  id: string;
+  id: number;
   user: {
     relationTo: 'users';
-    value: string | User;
+    value: number | User;
   };
   key?: string | null;
   value?:
@@ -207,7 +344,7 @@ export interface PayloadPreference {
  * via the `definition` "payload-migrations".
  */
 export interface PayloadMigration {
-  id: string;
+  id: number;
   name?: string | null;
   batch?: number | null;
   updatedAt: string;
@@ -218,6 +355,8 @@ export interface PayloadMigration {
  * via the `definition` "users_select".
  */
 export interface UsersSelect<T extends boolean = true> {
+  name?: T;
+  role?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;
@@ -255,6 +394,82 @@ export interface MediaSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "technicians_select".
+ */
+export interface TechniciansSelect<T extends boolean = true> {
+  techniciansId?: T;
+  name?: T;
+  profilePicture?: T;
+  email?: T;
+  phone?: T;
+  address?: T;
+  services?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "services_select".
+ */
+export interface ServicesSelect<T extends boolean = true> {
+  servicesId?: T;
+  name?: T;
+  description?: T;
+  category?: T;
+  price?: T;
+  jobs?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "appointments_select".
+ */
+export interface AppointmentsSelect<T extends boolean = true> {
+  appointmentsId?: T;
+  time?: T;
+  status?: T;
+  notes?: T;
+  customer?: T;
+  jobs?:
+    | T
+    | {
+        job?: T;
+        id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "jobs_select".
+ */
+export interface JobsSelect<T extends boolean = true> {
+  jobsId?: T;
+  name?: T;
+  service?: T;
+  technician?: T;
+  status?: T;
+  notes?: T;
+  appointment?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "customers_select".
+ */
+export interface CustomersSelect<T extends boolean = true> {
+  customersId?: T;
+  name?: T;
+  email?: T;
+  phone?: T;
+  notes?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-locked-documents_select".
  */
 export interface PayloadLockedDocumentsSelect<T extends boolean = true> {
@@ -284,6 +499,61 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
   batch?: T;
   updatedAt?: T;
   createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "emailSettings".
+ */
+export interface EmailSetting {
+  id: number;
+  provider?: 'brevo' | null;
+  apiKey: string;
+  brevoSenderList?: string | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "collectionConfig".
+ */
+export interface CollectionConfig {
+  id: number;
+  appointmentconfig?: {
+    /**
+     * If checked, the same service can be added multiple times to an appointment
+     */
+    allowDuplicate?: boolean | null;
+  };
+  jobConfig?: {};
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "emailSettings_select".
+ */
+export interface EmailSettingsSelect<T extends boolean = true> {
+  provider?: T;
+  apiKey?: T;
+  brevoSenderList?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "collectionConfig_select".
+ */
+export interface CollectionConfigSelect<T extends boolean = true> {
+  appointmentconfig?:
+    | T
+    | {
+        allowDuplicate?: T;
+      };
+  jobConfig?: T | {};
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
