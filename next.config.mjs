@@ -12,6 +12,9 @@ const nextConfig = {
 
     return webpackConfig
   },
+  images: {
+    remotePatterns: [new URL('https://picsum.photos/id/**')],
+  },
 }
 
 export default withPayload(nextConfig, { devBundleServerPackages: false })
