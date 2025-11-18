@@ -25,7 +25,12 @@ export const Services: CollectionConfig = {
     },
     {
       name: 'description',
-      type: 'text',
+      type: 'richText',
+    },
+    {
+      name: 'servicePicture',
+      type: 'upload',
+      relationTo: 'media',
     },
     {
       name: 'category',
@@ -47,19 +52,114 @@ export const Services: CollectionConfig = {
           label: 'Makeup Services',
           value: 'makeup',
         },
+        {
+          label: 'Lashes Services',
+          value: 'lashes',
+        },
       ],
     },
     {
-      name: 'price',
-      type: 'number',
-      min: 0,
-      required: true,
+      name: 'isParent',
+      label: 'Has Sub Services',
+      type: 'checkbox',
+      defaultValue: false,
+      admin: {
+        description: 'Set to true if this service has sub services',
+      },
     },
     {
-      name: 'jobs',
-      type: 'relationship',
-      relationTo: 'jobs',
-      hasMany: true,
+      name: 'subServices',
+      label: 'Sub Services',
+      type: 'array',
+      validate: (items) => {
+        // Prevent duplicate sub services
+        if (!items) return true
+        const ids = items.map((i: any) => i.subService)
+        const hasDuplicate = ids.some((id, i) => ids.indexOf(id) !== i)
+
+        return hasDuplicate ? 'Duplicate sub-services are not allowed.' : true
+      },
+      admin: {
+        condition: (_, siblingData) => siblingData.isParent,
+      },
+      hooks: {
+        beforeChange: [
+          // Auto sync lookup the min and max price of sub services, then put it to the parent price
+          async ({ siblingData, value, req }) => {
+            let price = []
+            if (value.length > 0) {
+              for (const subService of value) {
+                try {
+                  let subServiceData = await req.payload.findByID({
+                    collection: 'services',
+                    id: subService.subService as number,
+                  })
+                  let subServicePriceMin = subServiceData.priceRange?.min || 0
+                  let subServicePriceMax = subServiceData.priceRange?.max || 0
+
+                  if (subServicePriceMin !== 0) price.push(subServicePriceMin)
+                  if (subServicePriceMax !== 0) price.push(subServicePriceMax)
+                } catch (error) {
+                  continue
+                }
+              }
+              let min = Math.min(...price)
+              let max = Math.max(...price)
+              siblingData.priceRange = { min, max }
+            }
+            return value
+          },
+        ],
+      },
+      fields: [
+        {
+          name: 'subService',
+          type: 'relationship',
+          relationTo: 'services',
+          filterOptions: ({ data }) => {
+            // Prevent selecting its own
+            if (data?.id) {
+              return {
+                id: {
+                  not_equals: data.id,
+                },
+              }
+            }
+            return true
+          },
+        },
+      ],
+    },
+    {
+      name: 'priceRange',
+      label: 'Price Range',
+      admin: {
+        description: 'You can set only the min or max price if the service has one price',
+      },
+      type: 'group',
+      hooks: {
+        beforeChange: [
+          ({ value }) => {
+            if (typeof value.min === 'number' && value.max === null) {
+              value.max = value.min // auto-sync max with min
+            } else if (typeof value.max === 'number' && value.min === null) {
+              value.min = value.max // auto-sync min with max
+            }
+            return value
+          },
+        ],
+      },
+      fields: [
+        {
+          name: 'min',
+          type: 'number',
+          min: 0,
+        },
+        {
+          name: 'max',
+          type: 'number',
+        },
+      ],
     },
   ],
 }

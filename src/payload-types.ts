@@ -94,14 +94,8 @@ export interface Config {
   db: {
     defaultIDType: number;
   };
-  globals: {
-    emailSettings: EmailSetting;
-    collectionConfig: CollectionConfig;
-  };
-  globalsSelect: {
-    emailSettings: EmailSettingsSelect<false> | EmailSettingsSelect<true>;
-    collectionConfig: CollectionConfigSelect<false> | CollectionConfigSelect<true>;
-  };
+  globals: {};
+  globalsSelect: {};
   locale: null;
   user: User & {
     collection: 'users';
@@ -164,7 +158,7 @@ export interface User {
  */
 export interface Media {
   id: number;
-  alt: string;
+  alt?: string | null;
   updatedAt: string;
   createdAt: string;
   url?: string | null;
@@ -189,7 +183,17 @@ export interface Technician {
   email: string;
   phone?: string | null;
   address?: string | null;
-  services?: (number | Service)[] | null;
+  services?:
+    | {
+        services?: (number | null) | Service;
+        /**
+         * Duration in minutes
+         */
+        duration?: number | null;
+        id?: string | null;
+      }[]
+    | null;
+  calendar?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -201,29 +205,40 @@ export interface Service {
   id: number;
   servicesId?: string | null;
   name?: string | null;
-  description?: string | null;
-  category?: ('skincare' | 'hair' | 'nails' | 'makeup') | null;
-  price: number;
-  jobs?: (number | Job)[] | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "jobs".
- */
-export interface Job {
-  id: number;
-  jobsId?: string | null;
-  name?: string | null;
-  service: number | Service;
-  technician: number | Technician;
-  status?: ('pending' | 'in_progress' | 'completed' | 'cancelled') | null;
-  notes?: string | null;
+  description?: {
+    root: {
+      type: string;
+      children: {
+        type: string;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  servicePicture?: (number | null) | Media;
+  category?: ('skincare' | 'hair' | 'nails' | 'makeup' | 'lashes') | null;
   /**
-   * To assign this to an appointment, please do it in the appointment collection
+   * Set to true if this service has sub services
    */
-  appointment?: (number | null) | Appointment;
+  isParent?: boolean | null;
+  subServices?:
+    | {
+        subService?: (number | null) | Service;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * You can set only the min or max price if the service has one price
+   */
+  priceRange?: {
+    min?: number | null;
+    max?: number | null;
+  };
   updatedAt: string;
   createdAt: string;
 }
@@ -270,6 +285,25 @@ export interface Customer {
     };
     [k: string]: unknown;
   } | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "jobs".
+ */
+export interface Job {
+  id: number;
+  jobsId?: string | null;
+  name?: string | null;
+  service: number | Service;
+  technician: number | Technician;
+  status?: ('pending' | 'in_progress' | 'completed' | 'cancelled') | null;
+  notes?: string | null;
+  /**
+   * To assign this to an appointment, please do it in the appointment collection
+   */
+  appointment?: (number | null) | Appointment;
   updatedAt: string;
   createdAt: string;
 }
@@ -403,7 +437,14 @@ export interface TechniciansSelect<T extends boolean = true> {
   email?: T;
   phone?: T;
   address?: T;
-  services?: T;
+  services?:
+    | T
+    | {
+        services?: T;
+        duration?: T;
+        id?: T;
+      };
+  calendar?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -415,9 +456,21 @@ export interface ServicesSelect<T extends boolean = true> {
   servicesId?: T;
   name?: T;
   description?: T;
+  servicePicture?: T;
   category?: T;
-  price?: T;
-  jobs?: T;
+  isParent?: T;
+  subServices?:
+    | T
+    | {
+        subService?: T;
+        id?: T;
+      };
+  priceRange?:
+    | T
+    | {
+        min?: T;
+        max?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
 }
@@ -499,61 +552,6 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
   batch?: T;
   updatedAt?: T;
   createdAt?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "emailSettings".
- */
-export interface EmailSetting {
-  id: number;
-  provider?: 'brevo' | null;
-  apiKey: string;
-  brevoSenderList?: string | null;
-  updatedAt?: string | null;
-  createdAt?: string | null;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "collectionConfig".
- */
-export interface CollectionConfig {
-  id: number;
-  appointmentconfig?: {
-    /**
-     * If checked, the same service can be added multiple times to an appointment
-     */
-    allowDuplicate?: boolean | null;
-  };
-  jobConfig?: {};
-  updatedAt?: string | null;
-  createdAt?: string | null;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "emailSettings_select".
- */
-export interface EmailSettingsSelect<T extends boolean = true> {
-  provider?: T;
-  apiKey?: T;
-  brevoSenderList?: T;
-  updatedAt?: T;
-  createdAt?: T;
-  globalType?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "collectionConfig_select".
- */
-export interface CollectionConfigSelect<T extends boolean = true> {
-  appointmentconfig?:
-    | T
-    | {
-        allowDuplicate?: T;
-      };
-  jobConfig?: T | {};
-  updatedAt?: T;
-  createdAt?: T;
-  globalType?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

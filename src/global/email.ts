@@ -24,7 +24,7 @@ export const EmailConfig: GlobalConfig = {
       required: true,
       admin: {
         components: {
-          Field: '@/components/PasswordField',
+          Field: '@/components/admin/PasswordField',
         },
       },
       hooks: encryptionHooks,
@@ -36,7 +36,7 @@ export const EmailConfig: GlobalConfig = {
       // options: [],
       admin: {
         components: {
-          Field: '@/components/BrevoSenderListSelect/server',
+          Field: '@/components/admin/BrevoSenderListSelect/server',
         },
         condition: (data) => data?.apiKey,
       },

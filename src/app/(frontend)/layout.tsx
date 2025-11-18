@@ -1,5 +1,5 @@
 import React from 'react'
-import './styles.css'
+import './styles/styles.css'
 import Header from '@/components/frontend/Header'
 
 export const metadata = {

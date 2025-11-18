@@ -43,7 +43,7 @@ export default buildConfig({
     payloadCloudPlugin(),
     // storage-adapter-placeholder
   ],
-  globals: [EmailConfig, AppointmentsCollectionConfig],
+  // globals: [EmailConfig, AppointmentsCollectionConfig],
   csrf: [], // whitelist of domains to allow cookie auth from
   cors: ['http://localhost:3000', 'localhost:3001'],
 })
