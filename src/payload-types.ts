@@ -176,8 +176,7 @@ export interface Media {
  * via the `definition` "technicians".
  */
 export interface Technician {
-  id: number;
-  techniciansId?: string | null;
+  id: string;
   name: string;
   profilePicture?: (number | null) | Media;
   email: string;
@@ -185,7 +184,7 @@ export interface Technician {
   address?: string | null;
   services?:
     | {
-        services?: (number | null) | Service;
+        service?: (number | null) | Service;
         /**
          * Duration in minutes
          */
@@ -193,7 +192,25 @@ export interface Technician {
         id?: string | null;
       }[]
     | null;
-  calendar?: string | null;
+  /**
+   * Set default availability for the technician
+   */
+  weeklyAvailability?:
+    | {
+        id: string;
+        dayOfWeek: '1' | '2' | '3' | '4' | '5' | '6' | '0';
+        /**
+         * Add one or more work periods (e.g., 9–12 and 1–5). Leave empty = Day off.
+         */
+        timeRanges?:
+          | {
+              id: string;
+              start: string;
+              end: string;
+            }[]
+          | null;
+      }[]
+    | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -431,7 +448,7 @@ export interface MediaSelect<T extends boolean = true> {
  * via the `definition` "technicians_select".
  */
 export interface TechniciansSelect<T extends boolean = true> {
-  techniciansId?: T;
+  id?: T;
   name?: T;
   profilePicture?: T;
   email?: T;
@@ -440,11 +457,23 @@ export interface TechniciansSelect<T extends boolean = true> {
   services?:
     | T
     | {
-        services?: T;
+        service?: T;
         duration?: T;
         id?: T;
       };
-  calendar?: T;
+  weeklyAvailability?:
+    | T
+    | {
+        id?: T;
+        dayOfWeek?: T;
+        timeRanges?:
+          | T
+          | {
+              id?: T;
+              start?: T;
+              end?: T;
+            };
+      };
   updatedAt?: T;
   createdAt?: T;
 }
