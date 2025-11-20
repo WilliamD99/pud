@@ -11,7 +11,7 @@ export const generateIdHook: CollectionBeforeChangeHook = async ({ data, collect
 }
 
 // Use this hook for generating a name for each JOB collection
-export const generateJobNameHook: CollectionBeforeChangeHook = async ({ data, req }) => {
+export const generateJobNameHook: CollectionBeforeChangeHook = async ({ data, req, operation }) => {
   const techData = await req.payload.findByID({
     collection: 'technicians',
     id: data.technician,
@@ -20,7 +20,9 @@ export const generateJobNameHook: CollectionBeforeChangeHook = async ({ data, re
     collection: 'services',
     id: data.service,
   })
-  data.name = `${techData.name} - ${serviceData.name} (${data.jobsId})`
+  const jobId = operation === 'create' ? 'New' : data.id
+
+  data.name = `${techData.name} - ${serviceData.name} (${jobId})`
 
   return data
 }

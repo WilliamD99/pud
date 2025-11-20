@@ -3,7 +3,7 @@ import {
   syncJobsToAppointmentHook,
 } from '@/hooks/afterChangeHooks'
 import { generateIdHook, validateDuplicateServiceHook } from '@/hooks/beforeChangeHooks'
-import type { CollectionConfig } from 'payload'
+import type { CollectionConfig, Validate } from 'payload'
 
 export const Appointments: CollectionConfig = {
   slug: 'appointments',
@@ -85,27 +85,21 @@ export const Appointments: CollectionConfig = {
     },
     {
       name: 'jobs',
-      type: 'array',
-      fields: [
-        {
-          name: 'job',
-          type: 'relationship',
-          relationTo: 'jobs',
-        },
-      ],
-      validate: async (val, ctx) => {
-        const jobs = val as { id: string; job: number }[]
-        for (const job of jobs) {
-          const jobData = await ctx.req.payload.findByID({
-            collection: 'jobs',
-            id: job.job as number,
-          })
-          if (jobData.appointment !== null) return 'This job is already assigned to an appointment'
-          else return true
-        }
-        return true
+      type: 'relationship',
+      relationTo: 'jobs',
+      hasMany: true,
+      admin: {
+        allowCreate: true,
       },
       required: true,
+      // type: 'array',
+      // fields: [
+      //   {
+      //     name: 'job',
+      //     type: 'relationship',
+      //     relationTo: 'jobs',
+      //   },
+      // ],
     },
   ],
 }

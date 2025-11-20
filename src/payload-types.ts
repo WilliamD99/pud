@@ -176,7 +176,7 @@ export interface Media {
  * via the `definition` "technicians".
  */
 export interface Technician {
-  id: string;
+  id: number;
   name: string;
   profilePicture?: (number | null) | Media;
   email: string;
@@ -270,10 +270,7 @@ export interface Appointment {
   status?: ('pending' | 'confirmed' | 'cancelled' | 'completed') | null;
   notes?: string | null;
   customer?: (number | null) | Customer;
-  jobs: {
-    job?: (number | null) | Job;
-    id?: string | null;
-  }[];
+  jobs: (number | Job)[];
   updatedAt: string;
   createdAt: string;
 }
@@ -311,16 +308,11 @@ export interface Customer {
  */
 export interface Job {
   id: number;
-  jobsId?: string | null;
   name?: string | null;
   service: number | Service;
   technician: number | Technician;
   status?: ('pending' | 'in_progress' | 'completed' | 'cancelled') | null;
   notes?: string | null;
-  /**
-   * To assign this to an appointment, please do it in the appointment collection
-   */
-  appointment?: (number | null) | Appointment;
   updatedAt: string;
   createdAt: string;
 }
@@ -448,7 +440,6 @@ export interface MediaSelect<T extends boolean = true> {
  * via the `definition` "technicians_select".
  */
 export interface TechniciansSelect<T extends boolean = true> {
-  id?: T;
   name?: T;
   profilePicture?: T;
   email?: T;
@@ -513,12 +504,7 @@ export interface AppointmentsSelect<T extends boolean = true> {
   status?: T;
   notes?: T;
   customer?: T;
-  jobs?:
-    | T
-    | {
-        job?: T;
-        id?: T;
-      };
+  jobs?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -527,13 +513,11 @@ export interface AppointmentsSelect<T extends boolean = true> {
  * via the `definition` "jobs_select".
  */
 export interface JobsSelect<T extends boolean = true> {
-  jobsId?: T;
   name?: T;
   service?: T;
   technician?: T;
   status?: T;
   notes?: T;
-  appointment?: T;
   updatedAt?: T;
   createdAt?: T;
 }

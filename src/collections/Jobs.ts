@@ -1,4 +1,4 @@
-import { generateIdHook, generateJobNameHook } from '@/hooks/beforeChangeHooks'
+import { generateJobNameHook } from '@/hooks/beforeChangeHooks'
 import type { CollectionConfig } from 'payload'
 
 export const Jobs: CollectionConfig = {
@@ -8,17 +8,9 @@ export const Jobs: CollectionConfig = {
   },
   disableDuplicate: true,
   hooks: {
-    beforeChange: [generateIdHook, generateJobNameHook],
+    beforeChange: [generateJobNameHook],
   },
   fields: [
-    {
-      name: 'jobsId',
-      type: 'text',
-      admin: {
-        readOnly: true,
-        hidden: true,
-      },
-    },
     {
       name: 'name',
       type: 'text',
@@ -40,15 +32,6 @@ export const Jobs: CollectionConfig = {
       type: 'relationship',
       relationTo: 'technicians',
       required: true,
-      filterOptions: ({ data }) => {
-        if (!data?.service) return true
-
-        return {
-          services: {
-            contains: data.service,
-          },
-        }
-      },
       validate: async (val: any, { data, req }: { data: any; req: any }) => {
         if (!val || !data?.service) return 'Service and Technician are required'
 
@@ -58,7 +41,7 @@ export const Jobs: CollectionConfig = {
           collection: 'technicians',
           id: techId,
         })
-        const serviceIDs = tech.services.map((service: any) => service.id)
+        const serviceIDs = tech.services.map((service: any) => service.service.id)
         if (!serviceIDs.includes(data.service))
           return 'This Technician does not provide this service'
         else return true
@@ -92,18 +75,6 @@ export const Jobs: CollectionConfig = {
       name: 'notes',
       label: 'Notes',
       type: 'text',
-    },
-    {
-      name: 'appointment',
-      type: 'relationship',
-      relationTo: 'appointments',
-
-      hasMany: false,
-      admin: {
-        // hidden: true,
-        description: 'To assign this to an appointment, please do it in the appointment collection',
-        readOnly: true,
-      },
     },
   ],
 }

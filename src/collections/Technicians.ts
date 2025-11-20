@@ -22,17 +22,6 @@ export const Technicians: CollectionConfig = {
           },
           fields: [
             {
-              name: 'id',
-              type: 'text',
-              admin: {
-                hidden: true,
-                readOnly: true,
-              },
-              hooks: {
-                beforeChange: [({ value }) => value || crypto.randomUUID()],
-              },
-            },
-            {
               name: 'name',
               type: 'text',
               required: true,
@@ -101,7 +90,7 @@ export const Technicians: CollectionConfig = {
                 {
                   name: 'id',
                   type: 'text',
-                  admin: { readOnly: true },
+                  admin: { readOnly: true, hidden: true },
                   required: true,
                   hooks: {
                     beforeChange: [({ value }) => value || crypto.randomUUID()],
@@ -136,7 +125,7 @@ export const Technicians: CollectionConfig = {
                     {
                       name: 'id',
                       type: 'text',
-                      admin: { readOnly: true },
+                      admin: { readOnly: true, hidden: true },
                       required: true,
                       hooks: {
                         beforeChange: [({ value }) => value || crypto.randomUUID()],
