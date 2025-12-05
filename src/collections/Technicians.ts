@@ -1,4 +1,4 @@
-import type { CollectionConfig, Validate } from 'payload'
+import type { CollectionConfig, Validate, Where } from 'payload'
 
 export const Technicians: CollectionConfig = {
   slug: 'technicians',
@@ -60,6 +60,30 @@ export const Technicians: CollectionConfig = {
                   name: 'service',
                   type: 'relationship',
                   relationTo: 'services',
+                  filterOptions: ({ data, siblingData }) => {
+                    // Get all currently selected service IDs from the array
+                    const selectedServices = (data?.services || []).map((item: any) => {
+                      const id = typeof item.service === 'object' ? item.service?.id : item.service
+                      return id
+                    })
+                    const filteredServices = selectedServices.filter(
+                      (id: string) => id && id !== (siblingData as any)?.service,
+                    ) // Exclude current row's selection
+
+                    // Only show parent services (isSubService = false)
+                    if (filteredServices.length === 0) {
+                      return {
+                        isSubService: { equals: false },
+                      } as Where
+                    }
+
+                    return {
+                      and: [
+                        { id: { not_in: filteredServices } },
+                        { isSubService: { equals: false } },
+                      ],
+                    } as Where
+                  },
                 },
                 {
                   label: 'Duration',

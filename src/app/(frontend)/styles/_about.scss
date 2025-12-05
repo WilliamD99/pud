@@ -1,0 +1,14 @@
+.about-container {
+  padding: 25px 20px 100px;
+  @include md {
+    padding: 250px 30px 150px;
+  }
+  @include lg {
+    padding: 450px 40px 200px;
+  }
+  .about-list {
+    .service-box {
+      visibility: hidden;
+    }
+  }
+}

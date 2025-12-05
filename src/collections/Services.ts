@@ -5,6 +5,15 @@ export const Services: CollectionConfig = {
   slug: 'services',
   admin: {
     useAsTitle: 'name',
+    defaultColumns: ['name', 'category', 'servicePicture'],
+    listSearchableFields: ['name', 'category'],
+    baseFilter: () => {
+      return {
+        isSubService: {
+          equals: false,
+        },
+      }
+    },
   },
   disableDuplicate: true,
   hooks: {
@@ -99,6 +108,17 @@ export const Services: CollectionConfig = {
 
                   if (subServicePriceMin !== 0) price.push(subServicePriceMin)
                   if (subServicePriceMax !== 0) price.push(subServicePriceMax)
+
+                  // Mark the sub service as a sub service
+                  if (!subServiceData.isSubService) {
+                    await req.payload.update({
+                      collection: 'services',
+                      id: subService.subService as number,
+                      data: {
+                        isSubService: true,
+                      },
+                    })
+                  }
                 } catch (error) {
                   continue
                 }
@@ -160,6 +180,14 @@ export const Services: CollectionConfig = {
           type: 'number',
         },
       ],
+    },
+    {
+      name: 'isSubService',
+      type: 'checkbox',
+      defaultValue: false,
+      admin: {
+        hidden: true,
+      },
     },
   ],
 }

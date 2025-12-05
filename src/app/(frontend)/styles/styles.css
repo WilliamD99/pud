@@ -3,6 +3,10 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@utility font-instrument {
+  font-family: var(--font-instrument-sans), sans-serif;
+}
+
 :root {
   --font-mono: 'Roboto Mono', monospace;
   --radius: 0.625rem;

@@ -37,6 +37,8 @@ export default buildConfig({
     pool: {
       connectionString: process.env.DATABASE_URI || '',
     },
+    // Set push: false in production and use proper migrations
+    // For development, you may need to drop the technicians_services table if you get schema sync errors
   }),
   sharp,
   plugins: [

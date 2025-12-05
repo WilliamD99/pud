@@ -256,6 +256,7 @@ export interface Service {
     min?: number | null;
     max?: number | null;
   };
+  isSubService?: boolean | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -491,6 +492,7 @@ export interface ServicesSelect<T extends boolean = true> {
         min?: T;
         max?: T;
       };
+  isSubService?: T;
   updatedAt?: T;
   createdAt?: T;
 }

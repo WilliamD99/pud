@@ -1,14 +1,11 @@
 import { headers as getHeaders } from 'next/headers.js'
-import Image from 'next/image'
 import { getPayload } from 'payload'
 import React from 'react'
 import { fileURLToPath } from 'url'
 
 import config from '@/payload.config'
-import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel'
-import { Card, CardContent } from '@/components/ui/card'
-import ServiceCarousel from '@/components/frontend/ServiceCarousel'
-import TestComponent from '@/components/frontend/ServiceCarousel/test'
+import Hero from '@/components/frontend/Hero'
+import AboutUs from '@/components/frontend/About'
 
 export default async function HomePage() {
   const headers = await getHeaders()
@@ -19,16 +16,10 @@ export default async function HomePage() {
   const fileURL = `vscode://file/${fileURLToPath(import.meta.url)}`
 
   return (
-    <div className="home">
-      <div className="content flex justify-center items-center">
-        <TestComponent />
-      </div>
-      <div className="footer">
-        <p>Update this page by editing</p>
-        <a className="codeLink" href={fileURL}>
-          <code>app/(frontend)/page.tsx</code>
-        </a>
-      </div>
+    <div className="home bg-black">
+      <Hero />
+      <AboutUs />
+      <div className="content flex justify-center items-center">{/* <TestComponent /> */}</div>
     </div>
   )
 }

@@ -46,7 +46,7 @@ export default function ParallaxCarousel() {
   }, [api])
 
   return (
-    <div className="service-carousel h-screen w-full flex justify-center items-center bg-slate-500">
+    <div className="service-carousel h-screen w-full flex justify-center items-center">
       <Carousel
         className="w-full max-w-4xl"
         opts={{
@@ -61,8 +61,8 @@ export default function ParallaxCarousel() {
             <CarouselCustomItem key={index} index={index} ref={(el) => setItemRef(el, index)} />
           ))}
         </CarouselContent>
-        <CarouselPrevious />
-        <CarouselNext />
+        {/* <CarouselPrevious /> */}
+        {/* <CarouselNext /> */}
       </Carousel>
     </div>
   )

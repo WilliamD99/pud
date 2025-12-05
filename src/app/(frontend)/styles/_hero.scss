@@ -1,0 +1,22 @@
+.hero-container {
+  padding: 80px 20px 40px;
+  @include md {
+    padding: 250px 30px 150px;
+  }
+  @include lg {
+    padding: 450px 40px 200px;
+  }
+  .hero {
+    &-content {
+      h1 {
+        visibility: hidden;
+        div {
+          visibility: hidden;
+        }
+      }
+      .subtitle {
+        visibility: hidden;
+      }
+    }
+  }
+}

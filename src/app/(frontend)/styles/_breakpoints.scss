@@ -1,0 +1,115 @@
+// Tailwind CSS Breakpoints
+// https://tailwindcss.com/docs/responsive-design
+
+// Breakpoint variables
+$screen-sm: 640px;
+$screen-md: 768px;
+$screen-lg: 1024px;
+$screen-xl: 1280px;
+$screen-xxl: 1536px;
+
+// Mobile-first mixins (min-width)
+// Usage: @include sm { ... }
+@mixin sm {
+  @media (min-width: $screen-sm) {
+    @content;
+  }
+}
+
+@mixin md {
+  @media (min-width: $screen-md) {
+    @content;
+  }
+}
+
+@mixin lg {
+  @media (min-width: $screen-lg) {
+    @content;
+  }
+}
+
+@mixin xl {
+  @media (min-width: $screen-xl) {
+    @content;
+  }
+}
+
+@mixin xxl {
+  @media (min-width: $screen-xxl) {
+    @content;
+  }
+}
+
+// Max-width mixins (for desktop-first approach if needed)
+// Usage: @include max-sm { ... }
+@mixin max-sm {
+  @media (max-width: #{$screen-sm - 1px}) {
+    @content;
+  }
+}
+
+@mixin max-md {
+  @media (max-width: #{$screen-md - 1px}) {
+    @content;
+  }
+}
+
+@mixin max-lg {
+  @media (max-width: #{$screen-lg - 1px}) {
+    @content;
+  }
+}
+
+@mixin max-xl {
+  @media (max-width: #{$screen-xl - 1px}) {
+    @content;
+  }
+}
+
+@mixin max-xxl {
+  @media (max-width: #{$screen-xxl - 1px}) {
+    @content;
+  }
+}
+
+// Range mixins (for targeting specific breakpoint ranges)
+// Usage: @include only-sm { ... }
+@mixin only-sm {
+  @media (min-width: $screen-sm) and (max-width: #{$screen-md - 1px}) {
+    @content;
+  }
+}
+
+@mixin only-md {
+  @media (min-width: $screen-md) and (max-width: #{$screen-lg - 1px}) {
+    @content;
+  }
+}
+
+@mixin only-lg {
+  @media (min-width: $screen-lg) and (max-width: #{$screen-xl - 1px}) {
+    @content;
+  }
+}
+
+@mixin only-xl {
+  @media (min-width: $screen-xl) and (max-width: #{$screen-xxl - 1px}) {
+    @content;
+  }
+}
+
+// Custom breakpoint mixin
+// Usage: @include breakpoint(900px) { ... }
+@mixin breakpoint($width) {
+  @media (min-width: $width) {
+    @content;
+  }
+}
+
+// Between two breakpoints
+// Usage: @include between($screen-sm, $screen-lg) { ... }
+@mixin between($min, $max) {
+  @media (min-width: $min) and (max-width: #{$max - 1px}) {
+    @content;
+  }
+}
