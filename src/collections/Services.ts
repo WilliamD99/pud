@@ -1,5 +1,18 @@
 import { generateIdHook } from '@/hooks/beforeChangeHooks'
-import type { CollectionConfig } from 'payload'
+import type { CollectionBeforeChangeHook, CollectionConfig } from 'payload'
+
+const revalidateOnUpDateAfterChangeHook: CollectionBeforeChangeHook = async ({ data }) => {
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/revalidate-service`, {
+      method: 'POST',
+    })
+    const data = await response.json()
+    console.log(data)
+  } catch (err) {
+    console.error(err)
+  }
+  return data
+}
 
 export const Services: CollectionConfig = {
   slug: 'services',
@@ -18,6 +31,7 @@ export const Services: CollectionConfig = {
   disableDuplicate: true,
   hooks: {
     beforeChange: [generateIdHook],
+    afterChange: [revalidateOnUpDateAfterChangeHook],
   },
   fields: [
     {
@@ -187,6 +201,15 @@ export const Services: CollectionConfig = {
       defaultValue: false,
       admin: {
         hidden: true,
+      },
+    },
+    {
+      name: 'disabled',
+      label: 'Disabled',
+      type: 'checkbox',
+      defaultValue: false,
+      admin: {
+        description: 'Use this to disable the service from the frontend.',
       },
     },
   ],

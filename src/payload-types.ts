@@ -257,6 +257,10 @@ export interface Service {
     max?: number | null;
   };
   isSubService?: boolean | null;
+  /**
+   * Use this to disable the service from the frontend.
+   */
+  disabled?: boolean | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -493,6 +497,7 @@ export interface ServicesSelect<T extends boolean = true> {
         max?: T;
       };
   isSubService?: T;
+  disabled?: T;
   updatedAt?: T;
   createdAt?: T;
 }
