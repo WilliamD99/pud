@@ -7,6 +7,31 @@
   font-family: var(--font-instrument-sans), sans-serif;
 }
 
+@theme {
+  /* Define the animation variables that generate .animate-accordion-down / .animate-accordion-up utilities */
+  --animate-accordion-down: accordion-down 0.3s ease-out;
+  --animate-accordion-up: accordion-up 0.3s ease-out;
+
+  /* Define the keyframes that those animations use */
+  @keyframes accordion-down {
+    from {
+      height: 0;
+    }
+    to {
+      height: var(--radix-accordion-content-height);
+    }
+  }
+
+  @keyframes accordion-up {
+    from {
+      height: var(--radix-accordion-content-height);
+    }
+    to {
+      height: 0;
+    }
+  }
+}
+
 :root {
   --font-mono: 'Roboto Mono', monospace;
   --radius: 0.625rem;

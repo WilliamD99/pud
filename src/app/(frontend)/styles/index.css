@@ -93,4 +93,13 @@
 }
 .about-container .about-list .service-box {
   visibility: hidden;
+}
+
+.faq-container .faq-accordion {
+  overflow: hidden;
+}
+.faq-container .faq-accordion-item {
+  overflow: hidden;
+  background-color: rgb(21, 21, 21);
+  visibility: hidden;
 }/*# sourceMappingURL=index.css.map */

@@ -2,6 +2,7 @@ import { getPayload } from 'payload'
 import payloadConfig from '@/payload.config'
 import { unstable_cache as cache } from 'next/cache'
 
+// Get main services
 export const fetchParentServices = cache(
   async () => {
     try {
@@ -25,7 +26,6 @@ export const fetchParentServices = cache(
           ],
         },
       })
-      console.log(data.docs)
       return { data: data.docs, status: 200 }
     } catch (error) {
       console.log(error)
@@ -38,5 +38,34 @@ export const fetchParentServices = cache(
   [],
   {
     tags: ['parent-services'],
+  },
+)
+
+// Get frequently asked questions
+export const fetchFAQ = cache(
+  async () => {
+    try {
+      const payload = await getPayload({
+        config: payloadConfig,
+      })
+      const data = await payload.findGlobal({
+        slug: 'store-settings',
+        depth: 2,
+      })
+      return {
+        data: data.questions,
+        status: 200,
+      }
+    } catch (error) {
+      console.log(error)
+      return {
+        data: [],
+        status: 500,
+      }
+    }
+  },
+  [],
+  {
+    tags: ['faq'],
   },
 )

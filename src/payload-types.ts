@@ -607,6 +607,13 @@ export interface StoreSetting {
         id?: string | null;
       }[]
     | null;
+  questions?:
+    | {
+        question?: string | null;
+        answer?: string | null;
+        id?: string | null;
+      }[]
+    | null;
   updatedAt?: string | null;
   createdAt?: string | null;
 }
@@ -628,6 +635,13 @@ export interface StoreSettingsSelect<T extends boolean = true> {
     | {
         platform?: T;
         url?: T;
+        id?: T;
+      };
+  questions?:
+    | T
+    | {
+        question?: T;
+        answer?: T;
         id?: T;
       };
   updatedAt?: T;

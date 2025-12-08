@@ -1,0 +1,10 @@
+.faq-container {
+  .faq-accordion {
+    overflow: hidden;
+    &-item {
+      overflow: hidden;
+      background-color: rgb(21, 21, 21);
+      visibility: hidden;
+    }
+  }
+}
