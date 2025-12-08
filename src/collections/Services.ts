@@ -1,5 +1,22 @@
 import { generateIdHook } from '@/hooks/beforeChangeHooks'
-import type { CollectionConfig } from 'payload'
+import type { CollectionBeforeChangeHook, CollectionConfig } from 'payload'
+
+const revalidateOnUpDateAfterChangeHook: CollectionBeforeChangeHook = async ({ data }) => {
+  try {
+    await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/revalidate-service`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        secret: process.env.PAYLOAD_SECRET,
+      }),
+    })
+  } catch (err) {
+    console.error(err)
+  }
+  return data
+}
 
 export const Services: CollectionConfig = {
   slug: 'services',
@@ -18,6 +35,7 @@ export const Services: CollectionConfig = {
   disableDuplicate: true,
   hooks: {
     beforeChange: [generateIdHook],
+    afterChange: [revalidateOnUpDateAfterChangeHook],
   },
   fields: [
     {
@@ -160,10 +178,21 @@ export const Services: CollectionConfig = {
       hooks: {
         beforeChange: [
           ({ value }) => {
+            // Incase only one price is set, auto-sync the other price
             if (typeof value.min === 'number' && value.max === null) {
               value.max = value.min // auto-sync max with min
             } else if (typeof value.max === 'number' && value.min === null) {
               value.min = value.max // auto-sync min with max
+            }
+
+            // Incase both prices are set
+            // If the min is greater than the max, update the max to the min
+            if (
+              typeof value.min === 'number' &&
+              typeof value.max === 'number' &&
+              value.min > value.max
+            ) {
+              value.max = value.min
             }
             return value
           },
@@ -187,6 +216,14 @@ export const Services: CollectionConfig = {
       defaultValue: false,
       admin: {
         hidden: true,
+      },
+    },
+    {
+      name: 'disabled',
+      type: 'checkbox',
+      defaultValue: false,
+      admin: {
+        description: 'Use this to disable the service from the frontend.',
       },
     },
   ],

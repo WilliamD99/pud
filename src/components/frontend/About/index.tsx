@@ -1,7 +1,8 @@
-import React from 'react'
 import ServiceBoxList from './ServiceBoxList'
+import { fetchParentServices } from '@/lib/fetchServer'
 
-export default function AboutUs() {
+export default async function AboutUs() {
+  const services = await fetchParentServices()
   return (
     <div className="about-container space-y-8 md:space-y-16">
       <div className="about-content flex flex-col md:flex-row space-y-2">
@@ -16,7 +17,7 @@ export default function AboutUs() {
           with tailored makeup looks for every occasion.
         </p>
       </div>
-      <ServiceBoxList />
+      <ServiceBoxList services={services.data} />
     </div>
   )
 }
