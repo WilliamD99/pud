@@ -1,5 +1,38 @@
 import type { CollectionConfig, Validate, Where } from 'payload'
 
+// Map day names to numbers for comparison between StoreSettings and Technicians
+const dayNameToNumber: Record<string, string> = {
+  monday: '1',
+  tuesday: '2',
+  wednesday: '3',
+  thursday: '4',
+  friday: '5',
+  saturday: '6',
+  sunday: '0',
+}
+
+const dayNumberToName: Record<string, string> = {
+  '1': 'Monday',
+  '2': 'Tuesday',
+  '3': 'Wednesday',
+  '4': 'Thursday',
+  '5': 'Friday',
+  '6': 'Saturday',
+  '0': 'Sunday',
+}
+
+// Helper to convert time string (HH:mm) to minutes since midnight
+function timeToMinutes(time: string): number {
+  const [hours, minutes] = time.split(':').map(Number)
+  return hours * 60 + (minutes || 0)
+}
+
+// Helper to extract HH:mm from a Date object
+function extractTimeFromDate(date: Date | string): string {
+  const d = new Date(date)
+  return d.toTimeString().slice(0, 5) // Returns "HH:mm"
+}
+
 export const Technicians: CollectionConfig = {
   slug: 'technicians',
   admin: {
@@ -227,7 +260,7 @@ export const Technicians: CollectionConfig = {
                   }) as Validate,
                 },
               ],
-              validate: ((val) => {
+              validate: (async (val, { req }) => {
                 // No duplicate days of the week
                 if (!val) return true
                 const seen = new Set<string | number>()
@@ -237,6 +270,59 @@ export const Technicians: CollectionConfig = {
                   }
                   seen.add(item.dayOfWeek)
                 }
+
+                // Fetch store settings to validate against operating hours
+                const storeSettings = await req.payload.findGlobal({
+                  slug: 'store-settings',
+                })
+
+                const operatingHours = storeSettings?.operatingHours || []
+
+                // If no operating hours are set, skip validation
+                if (operatingHours.length === 0) return true
+
+                // Build a map of store hours by day number
+                const storeHoursByDay = new Map<string, { open: string; close: string }>()
+                for (const entry of operatingHours) {
+                  if (entry.day) {
+                    storeHoursByDay.set(dayNameToNumber[entry.day], {
+                      open: entry.open,
+                      close: entry.close,
+                    })
+                  }
+                }
+
+                // Validate each availability entry
+                for (const item of val) {
+                  const dayOfWeek = item.dayOfWeek
+                  const dayName = dayNumberToName[dayOfWeek]
+
+                  // Check if store is open on this day
+                  if (!storeHoursByDay.has(dayOfWeek)) {
+                    return `Store is not open on ${dayName}. Please select a day when the store operates.`
+                  }
+
+                  const storeHours = storeHoursByDay.get(dayOfWeek)!
+                  const storeOpenMinutes = timeToMinutes(storeHours.open)
+                  const storeCloseMinutes = timeToMinutes(storeHours.close)
+
+                  // Check each time range is within store hours
+                  for (const range of item.timeRanges || []) {
+                    const startTime = extractTimeFromDate(range.start)
+                    const endTime = extractTimeFromDate(range.end)
+                    const startMinutes = timeToMinutes(startTime)
+                    const endMinutes = timeToMinutes(endTime)
+
+                    if (startMinutes < storeOpenMinutes) {
+                      return `${dayName}: Start time ${startTime} is before store opens at ${storeHours.open}.`
+                    }
+
+                    if (endMinutes > storeCloseMinutes) {
+                      return `${dayName}: End time ${endTime} is after store closes at ${storeHours.close}.`
+                    }
+                  }
+                }
+
                 return true
               }) as Validate,
             },

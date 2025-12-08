@@ -15,6 +15,7 @@ import { Jobs } from './collections/Jobs'
 import { EmailConfig } from './global/email'
 import { Customers } from './collections/Customers'
 import { AppointmentsCollectionConfig } from './global/collection'
+import { StoreSettings } from './collections/StoreSettings'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -46,6 +47,7 @@ export default buildConfig({
     // storage-adapter-placeholder
   ],
   // globals: [EmailConfig, AppointmentsCollectionConfig],
+  globals: [StoreSettings],
   csrf: [], // whitelist of domains to allow cookie auth from
   cors: ['http://localhost:3000', 'localhost:3001'],
 })
