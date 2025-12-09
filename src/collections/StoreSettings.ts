@@ -165,6 +165,26 @@ export const StoreSettings: GlobalConfig = {
         },
         {
           label: 'Frequently Asked Questions',
+          hooks: {
+            afterChange: [
+              async ({ data }) => {
+                try {
+                  await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/revalidate-faq`, {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'applicaion/json',
+                    },
+                    body: JSON.stringify({
+                      secret: process.env.PAYLOAD_SECRET,
+                    }),
+                  })
+                } catch (err) {
+                  console.error(err)
+                }
+                return data
+              },
+            ],
+          },
           fields: [
             {
               name: 'questions',

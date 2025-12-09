@@ -12,9 +12,9 @@ import { Technicians } from './collections/Technicians'
 import { Services } from './collections/Services'
 import { Appointments } from './collections/Appointments'
 import { Jobs } from './collections/Jobs'
-import { EmailConfig } from './global/email'
+// import { EmailConfig } from './global/email'
 import { Customers } from './collections/Customers'
-import { AppointmentsCollectionConfig } from './global/collection'
+// import { AppointmentsCollectionConfig } from './global/collection'
 import { StoreSettings } from './collections/StoreSettings'
 
 const filename = fileURLToPath(import.meta.url)
@@ -38,8 +38,6 @@ export default buildConfig({
     pool: {
       connectionString: process.env.DATABASE_URI || '',
     },
-    // Set push: false in production and use proper migrations
-    // For development, you may need to drop the technicians_services table if you get schema sync errors
   }),
   sharp,
   plugins: [

@@ -41,6 +41,71 @@ export const fetchParentServices = cache(
   },
 )
 
+// Get services (with sub services)
+export const fetchServices = cache(
+  async () => {
+    try {
+      const payload = await getPayload({ config: payloadConfig })
+
+      const data = await payload.find({
+        collection: 'services',
+        where: {
+          or: [
+            {
+              and: [
+                {
+                  isParent: {
+                    equals: false,
+                  },
+                },
+                {
+                  isSubService: {
+                    equals: false,
+                  },
+                },
+                {
+                  disabled: {
+                    equals: false,
+                  },
+                },
+              ],
+            },
+            {
+              and: [
+                {
+                  isParent: {
+                    equals: true,
+                  },
+                },
+                {
+                  disabled: {
+                    equals: false,
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      })
+      console.log(data.docs)
+      return {
+        data: data.docs,
+        status: 200,
+      }
+    } catch (error) {
+      console.log(error)
+      return {
+        data: [],
+        status: 500,
+      }
+    }
+  },
+  [],
+  {
+    tags: ['services'],
+  },
+)
+
 // Get frequently asked questions
 export const fetchFAQ = cache(
   async () => {
