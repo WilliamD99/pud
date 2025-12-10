@@ -6,6 +6,26 @@ export const StoreSettings: GlobalConfig = {
   access: {
     update: ({ req }) => !!req.user && req.user?.role === 'admin',
   },
+  hooks: {
+    afterChange: [
+      async ({ data }) => {
+        try {
+          await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/revalidate-store-settings`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'applicaion/json',
+            },
+            body: JSON.stringify({
+              secret: process.env.PAYLOAD_SECRET,
+            }),
+          })
+        } catch (err) {
+          console.error(err)
+        }
+        return data
+      },
+    ],
+  },
   fields: [
     {
       type: 'tabs',

@@ -4,6 +4,7 @@ import Header from '@/components/frontend/Header'
 
 import { Instrument_Sans } from 'next/font/google'
 import { cn } from '@/lib/utils'
+import QueryClientWrapper from '@/components/frontend/QueryProvider/query-client-provider'
 
 const instrumentSans = Instrument_Sans({
   subsets: ['latin'],
@@ -24,7 +25,9 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
       <body className={cn('', instrumentSans.variable)}>
         <div className="container mx-auto relative">
           <Header />
-          <main>{children}</main>
+          <main>
+            <QueryClientWrapper>{children}</QueryClientWrapper>
+          </main>
         </div>
       </body>
     </html>

@@ -6,20 +6,25 @@ import { TechnicianSelector } from './TechnicianSelector'
 import TimeSlotPicker from './TimeSlotPicker'
 import { Calendar } from '@/components/ui/calendar'
 import { Label } from '@/components/ui/label'
-import { Service } from '@/payload-types'
+import { Service, StoreSetting } from '@/payload-types'
 import CustomerInformation from './CustomerInformation'
+import BookingDatePicker from './BookingDatePicker'
 
 interface BookingFormProps {
   services: Service[]
+  operatingHours: StoreSetting['operatingHours']
 }
 
-export default function BookingForm({ services }: BookingFormProps) {
+export default function BookingForm({ services, operatingHours }: BookingFormProps) {
   const [date, setDate] = useState<Date | undefined>(undefined)
   const [selectedTime, setSelectedTime] = useState<string | null>(null)
 
   // Selected Service state
   const [selectedService, setSelectedService] = useState<string | null>(null)
   const [selectedVariant, setSelectedVariant] = useState<string | null>(null)
+
+  // Selected Technician State
+  const [selectedTech, setSelectedTech] = useState<string | null>(null)
 
   const handleServiceSelect = (serviceId: string, variantId: string | null) => {
     setSelectedService(serviceId)
@@ -29,6 +34,7 @@ export default function BookingForm({ services }: BookingFormProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
   }
+
   return (
     <form onSubmit={handleSubmit}>
       <div className="grid gap-6 lg-grid-cols-3">
@@ -63,7 +69,19 @@ export default function BookingForm({ services }: BookingFormProps) {
                 <CardTitle className="text-lg">Choose Your Technician</CardTitle>
               </div>
             </CardHeader>
-            <CardContent>{/* <TechnicianSelector /> */}</CardContent>
+            <CardContent>
+              {selectedService ? (
+                <TechnicianSelector
+                  selectedService={selectedService}
+                  selectedTechnician={selectedTech}
+                  onSelectTechnician={setSelectedTech}
+                />
+              ) : (
+                <div className="flex items-center justify-center h-full">
+                  <p className="text-sm text-muted-foreground">Please select a service first</p>
+                </div>
+              )}
+            </CardContent>
           </Card>
 
           {/* Date picker */}
@@ -77,30 +95,15 @@ export default function BookingForm({ services }: BookingFormProps) {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="grid gap-6 md:grid-cols-2 relative">
-                <div className="w-full relative h-full flex flex-col">
-                  <Label className="mb-2 block text-sm font-medium text-muted-foreground">
-                    Select Date
-                  </Label>
-                  <Calendar
-                    mode="single"
-                    selected={date}
-                    onSelect={setDate}
-                    disabled={(date) => date < new Date() || date.getDay() === 0}
-                    className="rounded-lg border border-border w-full"
-                  />
-                </div>
-                <div className="relative w-full h-full flex flex-col">
-                  <Label className="mb-2 block text-sm font-medium text-muted-foreground">
-                    Select Time
-                  </Label>
-                  <TimeSlotPicker
-                    selectedTime={selectedTime}
-                    onSelectTime={setSelectedTime}
-                    disabled={!date}
-                  />
-                </div>
-              </div>
+              {operatingHours && (
+                <BookingDatePicker
+                  operatingDays={operatingHours}
+                  date={date}
+                  setDate={setDate}
+                  selectedTime={selectedTime}
+                  setSelectedTime={setSelectedTime}
+                />
+              )}
             </CardContent>
           </Card>
 

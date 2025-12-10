@@ -1,10 +1,10 @@
-import { fetchFAQ } from '@/lib/fetchServer'
+import { fetchStoreSettings } from '@/lib/fetchServer'
 import React from 'react'
 import FaqAccordion from './FaqAccordion'
 
 export default async function FAQ() {
-  const faq = await fetchFAQ()
-  if (!faq.data) return null
+  const faq = await fetchStoreSettings()
+  if (!faq.data || !faq.data.questions) return null
   return (
     <div className="faq-container space-y-8 md:space-y-10 p-8 md:p-16">
       <div className="flex flex-col space-y-1 items-center">
@@ -18,7 +18,7 @@ export default async function FAQ() {
         </p>
       </div>
       <div className="md:max-w-4xl mx-auto">
-        <FaqAccordion faq={faq.data} />
+        <FaqAccordion faq={faq.data.questions} />
       </div>
     </div>
   )

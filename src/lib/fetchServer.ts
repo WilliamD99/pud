@@ -87,7 +87,7 @@ export const fetchServices = cache(
           ],
         },
       })
-      console.log(data.docs)
+      // console.log(data.docs)
       return {
         data: data.docs,
         status: 200,
@@ -107,7 +107,7 @@ export const fetchServices = cache(
 )
 
 // Get frequently asked questions
-export const fetchFAQ = cache(
+export const fetchStoreSettings = cache(
   async () => {
     try {
       const payload = await getPayload({
@@ -117,20 +117,23 @@ export const fetchFAQ = cache(
         slug: 'store-settings',
         depth: 2,
       })
+      // console.log(data)
       return {
-        data: data.questions,
+        data: data,
         status: 200,
       }
     } catch (error) {
       console.log(error)
       return {
-        data: [],
+        data: null,
         status: 500,
       }
     }
   },
   [],
   {
-    tags: ['faq'],
+    tags: ['store-settings'],
   },
 )
+
+//

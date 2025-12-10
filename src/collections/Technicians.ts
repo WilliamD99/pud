@@ -331,6 +331,35 @@ export const Technicians: CollectionConfig = {
       ],
     },
   ],
+  endpoints: [
+    {
+      path: '/techsByService/:serviceId',
+      method: 'get',
+      handler: async (req) => {
+        try {
+          const serviceId = req.routeParams?.serviceId
+          const data = await req.payload.find({
+            collection: 'technicians',
+            where: {
+              'services.service.servicesId': {
+                equals: serviceId,
+              },
+            },
+          })
+
+          return Response.json({
+            data: data.docs,
+            status: 200,
+          })
+        } catch (error) {
+          return Response.json({
+            data: [],
+            status: 500,
+          })
+        }
+      },
+    },
+  ],
 }
 
 // Helper to format time nicely
