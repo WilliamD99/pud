@@ -52,3 +52,28 @@ export const validateDuplicateServiceHook: CollectionBeforeChangeHook = async ({
   }
   return data
 }
+
+export const updateJobDurationHook: CollectionBeforeChangeHook = async ({ req, data }) => {
+  try {
+    // Get the duration of the job from the technician
+    const technician = await req.payload.findByID({
+      collection: 'technicians',
+      id: data.technician,
+      req,
+    })
+    const techServices = technician?.services
+    const duration = techServices?.find((service) =>
+      typeof service.service === 'object'
+        ? service.service?.id === data.service
+        : service.service === data.service,
+    )?.duration
+
+    return {
+      ...data,
+      duration: duration,
+    }
+  } catch (error) {
+    console.log(error)
+    return data
+  }
+}

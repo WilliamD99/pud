@@ -1,3 +1,4 @@
+import { generateIdHook } from '@/hooks/beforeChangeHooks'
 import type { CollectionConfig, Validate, Where } from 'payload'
 
 // Map day names to numbers for comparison between StoreSettings and Technicians
@@ -39,7 +40,9 @@ export const Technicians: CollectionConfig = {
     useAsTitle: 'name',
   },
   disableDuplicate: true,
-  hooks: {},
+  hooks: {
+    beforeChange: [generateIdHook],
+  },
   access: {
     read: () => true,
     update: ({ req }) => !!req.user,
@@ -54,6 +57,14 @@ export const Technicians: CollectionConfig = {
             description: 'You can update the basic information of the technician here',
           },
           fields: [
+            {
+              name: 'techniciansId',
+              type: 'text',
+              admin: {
+                hidden: true,
+                readOnly: true,
+              },
+            },
             {
               name: 'name',
               type: 'text',
@@ -145,15 +156,6 @@ export const Technicians: CollectionConfig = {
               },
               fields: [
                 {
-                  name: 'id',
-                  type: 'text',
-                  admin: { readOnly: true, hidden: true },
-                  required: true,
-                  hooks: {
-                    beforeChange: [({ value }) => value || crypto.randomUUID()],
-                  },
-                },
-                {
                   name: 'dayOfWeek',
                   type: 'select',
                   required: true,
@@ -180,151 +182,139 @@ export const Technicians: CollectionConfig = {
                   },
                   fields: [
                     {
-                      name: 'id',
-                      type: 'text',
-                      admin: { readOnly: true, hidden: true },
-                      required: true,
-                      hooks: {
-                        beforeChange: [({ value }) => value || crypto.randomUUID()],
-                      },
-                    },
-                    {
                       name: 'start',
-                      type: 'date',
+                      type: 'text',
                       required: true,
                       admin: {
-                        date: {
-                          pickerAppearance: 'timeOnly',
-                          displayFormat: 'h:mm a',
-                        },
+                        placeholder: '09:00',
                       },
-                      validate: ((_, ctx) => {
-                        // Validate that the start time is before the end time
-                        let start = new Date(ctx.siblingData.start)
-                        let end = new Date(ctx.siblingData.end)
-                        if (start > end) {
-                          return 'Start time must be before end time'
-                        }
-                        return true
-                      }) as Validate,
+                      // validate: ((_, ctx) => {
+                      //   // Validate that the start time is before the end time
+                      //   let start = new Date(ctx.siblingData.start)
+                      //   let end = new Date(ctx.siblingData.end)
+                      //   if (start > end) {
+                      //     return 'Start time must be before end time'
+                      //   }
+                      //   return true
+                      // }) as Validate,
                     },
                     {
                       name: 'end',
-                      type: 'date',
+                      type: 'text',
                       required: true,
-                      admin: {
-                        date: {
-                          pickerAppearance: 'timeOnly',
-                          displayFormat: 'h:mm a',
-                        },
-                      },
+                      // admin: {
+                      //   date: {
+                      //     pickerAppearance: 'timeOnly',
+                      //     displayFormat: 'h:mm a',
+                      //   },
+                      // },
                     },
                   ],
-                  validate: ((val) => {
-                    // Enforce that time ranges can't be the same or overlap
-                    if (!val || !Array.isArray(val)) return true
+                  // validate: ((val) => {
+                  //   // Enforce that time ranges can't be the same or overlap
+                  //   if (!val || !Array.isArray(val)) return true
 
-                    // Sort ranges by start time
-                    const ranges = val
-                      .map((item) => ({
-                        start: new Date(item.start).getTime(),
-                        end: new Date(item.end).getTime(),
-                      }))
-                      .sort((a, b) => a.start - b.start)
+                  //   // Sort ranges by start time
+                  //   const ranges = val
+                  //     .map((item) => ({
+                  //       start: new Date(item.start).getTime(),
+                  //       end: new Date(item.end).getTime(),
+                  //     }))
+                  //     .sort((a, b) => a.start - b.start)
 
-                    for (let i = 0; i < ranges.length; i++) {
-                      const { start, end } = ranges[i]
+                  //   for (let i = 0; i < ranges.length; i++) {
+                  //     const { start, end } = ranges[i]
 
-                      // Check if start is before end
-                      if (start >= end) {
-                        return `Time range ${i + 1} has start time after or equal to end time.`
-                      }
+                  //     // Check if start is before end
+                  //     if (start >= end) {
+                  //       return `Time range ${i + 1} has start time after or equal to end time.`
+                  //     }
 
-                      // Check for duplicates
-                      for (let j = i + 1; j < ranges.length; j++) {
-                        if (start === ranges[j].start && end === ranges[j].end) {
-                          return `Duplicate time range detected: ${formatTime(start)} - ${formatTime(end)}.`
-                        }
-                      }
+                  //     // Check for duplicates
+                  //     for (let j = i + 1; j < ranges.length; j++) {
+                  //       if (start === ranges[j].start && end === ranges[j].end) {
+                  //         return `Duplicate time range detected: ${formatTime(start)} - ${formatTime(end)}.`
+                  //       }
+                  //     }
 
-                      // Check for overlap with next range
-                      if (i < ranges.length - 1) {
-                        const next = ranges[i + 1]
-                        if (end > next.start) {
-                          return `Time range ${formatTime(start)} - ${formatTime(end)} overlaps with ${formatTime(next.start)} - ${formatTime(next.end)}.`
-                        }
-                      }
-                    }
+                  //     // Check for overlap with next range
+                  //     if (i < ranges.length - 1) {
+                  //       const next = ranges[i + 1]
+                  //       if (end > next.start) {
+                  //         return `Time range ${formatTime(start)} - ${formatTime(end)} overlaps with ${formatTime(next.start)} - ${formatTime(next.end)}.`
+                  //       }
+                  //     }
+                  //   }
 
-                    return true
-                  }) as Validate,
+                  //   return true
+                  // }) as Validate,
                 },
               ],
-              validate: (async (val, { req }) => {
-                // No duplicate days of the week
-                if (!val) return true
-                const seen = new Set<string | number>()
-                for (const item of val) {
-                  if (seen.has(item.dayOfWeek)) {
-                    return "Can't have duplicate days of the week"
-                  }
-                  seen.add(item.dayOfWeek)
-                }
+              // validate: (async (val, { req }) => {
+              //   // No duplicate days of the week
+              //   if (!val) return true
+              //   const seen = new Set<string | number>()
+              //   for (const item of val) {
+              //     if (seen.has(item.dayOfWeek)) {
+              //       return "Can't have duplicate days of the week"
+              //     }
+              //     seen.add(item.dayOfWeek)
+              //   }
 
-                // Fetch store settings to validate against operating hours
-                const storeSettings = await req.payload.findGlobal({
-                  slug: 'store-settings',
-                })
+              //   // Fetch store settings to validate against operating hours
+              //   const storeSettings = await req.payload.findGlobal({
+              //     slug: 'store-settings',
+              //   })
 
-                const operatingHours = storeSettings?.operatingHours || []
+              //   const operatingHours = storeSettings?.operatingHours || []
 
-                // If no operating hours are set, skip validation
-                if (operatingHours.length === 0) return true
+              //   // If no operating hours are set, skip validation
+              //   if (operatingHours.length === 0) return true
 
-                // Build a map of store hours by day number
-                const storeHoursByDay = new Map<string, { open: string; close: string }>()
-                for (const entry of operatingHours) {
-                  if (entry.day) {
-                    storeHoursByDay.set(dayNameToNumber[entry.day], {
-                      open: entry.open,
-                      close: entry.close,
-                    })
-                  }
-                }
+              //   // Build a map of store hours by day number
+              //   const storeHoursByDay = new Map<string, { open: string; close: string }>()
+              //   for (const entry of operatingHours) {
+              //     if (entry.day) {
+              //       storeHoursByDay.set(dayNameToNumber[entry.day], {
+              //         open: entry.open,
+              //         close: entry.close,
+              //       })
+              //     }
+              //   }
 
-                // Validate each availability entry
-                for (const item of val) {
-                  const dayOfWeek = item.dayOfWeek
-                  const dayName = dayNumberToName[dayOfWeek]
+              //   // Validate each availability entry
+              //   for (const item of val) {
+              //     const dayOfWeek = item.dayOfWeek
+              //     const dayName = dayNumberToName[dayOfWeek]
 
-                  // Check if store is open on this day
-                  if (!storeHoursByDay.has(dayOfWeek)) {
-                    return `Store is not open on ${dayName}. Please select a day when the store operates.`
-                  }
+              //     // Check if store is open on this day
+              //     if (!storeHoursByDay.has(dayOfWeek)) {
+              //       return `Store is not open on ${dayName}. Please select a day when the store operates.`
+              //     }
 
-                  const storeHours = storeHoursByDay.get(dayOfWeek)!
-                  const storeOpenMinutes = timeToMinutes(storeHours.open)
-                  const storeCloseMinutes = timeToMinutes(storeHours.close)
+              //     const storeHours = storeHoursByDay.get(dayOfWeek)!
+              //     const storeOpenMinutes = timeToMinutes(storeHours.open)
+              //     const storeCloseMinutes = timeToMinutes(storeHours.close)
 
-                  // Check each time range is within store hours
-                  for (const range of item.timeRanges || []) {
-                    const startTime = extractTimeFromDate(range.start)
-                    const endTime = extractTimeFromDate(range.end)
-                    const startMinutes = timeToMinutes(startTime)
-                    const endMinutes = timeToMinutes(endTime)
+              //     // Check each time range is within store hours
+              //     for (const range of item.timeRanges || []) {
+              //       const startTime = extractTimeFromDate(range.start)
+              //       const endTime = extractTimeFromDate(range.end)
+              //       const startMinutes = timeToMinutes(startTime)
+              //       const endMinutes = timeToMinutes(endTime)
 
-                    if (startMinutes < storeOpenMinutes) {
-                      return `${dayName}: Start time ${startTime} is before store opens at ${storeHours.open}.`
-                    }
+              //       if (startMinutes < storeOpenMinutes) {
+              //         return `${dayName}: Start time ${startTime} is before store opens at ${storeHours.open}.`
+              //       }
 
-                    if (endMinutes > storeCloseMinutes) {
-                      return `${dayName}: End time ${endTime} is after store closes at ${storeHours.close}.`
-                    }
-                  }
-                }
+              //       if (endMinutes > storeCloseMinutes) {
+              //         return `${dayName}: End time ${endTime} is after store closes at ${storeHours.close}.`
+              //       }
+              //     }
+              //   }
 
-                return true
-              }) as Validate,
+              //   return true
+              // }) as Validate,
             },
           ],
         },

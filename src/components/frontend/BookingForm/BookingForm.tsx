@@ -3,12 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import React, { useState } from 'react'
 import ServiceSelector from './ServiceSelector'
 import { TechnicianSelector } from './TechnicianSelector'
-import TimeSlotPicker from './TimeSlotPicker'
-import { Calendar } from '@/components/ui/calendar'
-import { Label } from '@/components/ui/label'
-import { Service, StoreSetting } from '@/payload-types'
+import { Service, StoreSetting, Technician } from '@/payload-types'
 import CustomerInformation from './CustomerInformation'
-import BookingDatePicker from './BookingDatePicker'
+import DatePicker from './DatePicker'
 
 interface BookingFormProps {
   services: Service[]
@@ -24,7 +21,7 @@ export default function BookingForm({ services, operatingHours }: BookingFormPro
   const [selectedVariant, setSelectedVariant] = useState<string | null>(null)
 
   // Selected Technician State
-  const [selectedTech, setSelectedTech] = useState<string | null>(null)
+  const [selectedTech, setSelectedTech] = useState<Technician | null>(null)
 
   const handleServiceSelect = (serviceId: string, variantId: string | null) => {
     setSelectedService(serviceId)
@@ -96,12 +93,13 @@ export default function BookingForm({ services, operatingHours }: BookingFormPro
             </CardHeader>
             <CardContent>
               {operatingHours && (
-                <BookingDatePicker
-                  operatingDays={operatingHours}
+                <DatePicker
                   date={date}
                   setDate={setDate}
                   selectedTime={selectedTime}
                   setSelectedTime={setSelectedTime}
+                  operatingDays={operatingHours}
+                  selectedTechnician={selectedTech}
                 />
               )}
             </CardContent>

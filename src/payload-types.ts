@@ -181,6 +181,7 @@ export interface Media {
  */
 export interface Technician {
   id: number;
+  techniciansId?: string | null;
   name: string;
   profilePicture?: (number | null) | Media;
   email: string;
@@ -201,18 +202,18 @@ export interface Technician {
    */
   weeklyAvailability?:
     | {
-        id: string;
         dayOfWeek: '1' | '2' | '3' | '4' | '5' | '6' | '0';
         /**
          * Add one or more work periods (e.g., 9–12 and 1–5). Leave empty = Day off.
          */
         timeRanges?:
           | {
-              id: string;
               start: string;
               end: string;
+              id?: string | null;
             }[]
           | null;
+        id?: string | null;
       }[]
     | null;
   updatedAt: string;
@@ -260,7 +261,6 @@ export interface Service {
  */
 export interface Appointment {
   id: number;
-  appointmentsId?: string | null;
   time: string;
   status?: ('pending' | 'confirmed' | 'cancelled' | 'completed') | null;
   notes?: string | null;
@@ -308,6 +308,10 @@ export interface Job {
   technician: number | Technician;
   status?: ('pending' | 'in_progress' | 'completed' | 'cancelled') | null;
   notes?: string | null;
+  /**
+   * Duration in minutes (This is automatically calculated based on setting duration at the technician level)
+   */
+  duration?: number | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -435,6 +439,7 @@ export interface MediaSelect<T extends boolean = true> {
  * via the `definition` "technicians_select".
  */
 export interface TechniciansSelect<T extends boolean = true> {
+  techniciansId?: T;
   name?: T;
   profilePicture?: T;
   email?: T;
@@ -450,15 +455,15 @@ export interface TechniciansSelect<T extends boolean = true> {
   weeklyAvailability?:
     | T
     | {
-        id?: T;
         dayOfWeek?: T;
         timeRanges?:
           | T
           | {
-              id?: T;
               start?: T;
               end?: T;
+              id?: T;
             };
+        id?: T;
       };
   updatedAt?: T;
   createdAt?: T;
@@ -496,7 +501,6 @@ export interface ServicesSelect<T extends boolean = true> {
  * via the `definition` "appointments_select".
  */
 export interface AppointmentsSelect<T extends boolean = true> {
-  appointmentsId?: T;
   time?: T;
   status?: T;
   notes?: T;
@@ -515,6 +519,7 @@ export interface JobsSelect<T extends boolean = true> {
   technician?: T;
   status?: T;
   notes?: T;
+  duration?: T;
   updatedAt?: T;
   createdAt?: T;
 }

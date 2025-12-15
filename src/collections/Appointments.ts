@@ -7,9 +7,7 @@ import type { CollectionConfig, Validate } from 'payload'
 
 export const Appointments: CollectionConfig = {
   slug: 'appointments',
-  admin: {
-    useAsTitle: 'appointmentsId',
-  },
+
   access: {
     read: () => {
       return true
@@ -17,18 +15,10 @@ export const Appointments: CollectionConfig = {
   },
   disableDuplicate: true,
   hooks: {
-    beforeChange: [generateIdHook, validateDuplicateServiceHook],
-    afterOperation: [syncJobsToAppointmentHook],
+    // beforeChange: [validateDuplicateServiceHook],
+    // afterOperation: [syncJobsToAppointmentHook],
   },
   fields: [
-    {
-      name: 'appointmentsId',
-      type: 'text',
-      admin: {
-        readOnly: true,
-        hidden: true,
-      },
-    },
     {
       name: 'time',
       type: 'date',
@@ -100,6 +90,74 @@ export const Appointments: CollectionConfig = {
       //     relationTo: 'jobs',
       //   },
       // ],
+    },
+  ],
+  endpoints: [
+    {
+      method: 'get',
+      path: '/:techId/availability',
+      handler: async (req) => {
+        try {
+          const { payload, routeParams } = req
+          const dateString = req.query.date as string
+          const date = new Date(dateString)
+          const techId = routeParams?.techId as string
+
+          // Start of day (UTC)
+          const startOfDay = new Date(
+            Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 0, 0, 0, 0),
+          )
+          // End of day (UTC)
+          const endOfDay = new Date(
+            Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 23, 59, 59, 999),
+          )
+
+          const data = await payload.find({
+            collection: 'appointments',
+            where: {
+              time: {
+                greater_than_equal: startOfDay,
+                less_than_equal: endOfDay,
+              },
+            },
+            depth: 2,
+            select: {
+              jobs: true,
+              time: true,
+            },
+          })
+          let timeSlots = []
+
+          if (data.docs.length > 0) {
+            for (const appointment of data.docs) {
+              for (const job of appointment.jobs) {
+                if (typeof job === 'object') {
+                  if (
+                    typeof job.technician === 'object' &&
+                    job.technician.techniciansId === techId
+                  ) {
+                    timeSlots.push({
+                      duration: job.duration,
+                      time: appointment.time,
+                    })
+                  }
+                }
+              }
+            }
+          }
+
+          return Response.json({
+            data: timeSlots,
+            status: 200,
+          })
+        } catch (error) {
+          console.log(error)
+          return Response.json({
+            data: [],
+            status: 500,
+          })
+        }
+      },
     },
   ],
 }

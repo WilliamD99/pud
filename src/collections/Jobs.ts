@@ -1,4 +1,5 @@
-import { generateJobNameHook } from '@/hooks/beforeChangeHooks'
+import { generateJobNameHook, updateJobDurationHook } from '@/hooks/beforeChangeHooks'
+import { Technician } from '@/payload-types'
 import type { CollectionConfig } from 'payload'
 
 export const Jobs: CollectionConfig = {
@@ -8,7 +9,7 @@ export const Jobs: CollectionConfig = {
   },
   disableDuplicate: true,
   hooks: {
-    beforeChange: [generateJobNameHook],
+    beforeChange: [generateJobNameHook, updateJobDurationHook],
   },
   fields: [
     {
@@ -25,6 +26,13 @@ export const Jobs: CollectionConfig = {
       type: 'relationship',
       relationTo: 'services',
       required: true,
+      filterOptions: () => {
+        return {
+          isSubService: {
+            equals: false,
+          },
+        }
+      },
     },
     {
       name: 'technician',
@@ -37,11 +45,15 @@ export const Jobs: CollectionConfig = {
 
         const techId = typeof val === 'string' || typeof val === 'number' ? val : val.id
 
-        const tech = await req.payload.findByID({
+        const tech: Technician = await req.payload.findByID({
           collection: 'technicians',
           id: techId,
         })
-        const serviceIDs = tech.services.map((service: any) => service.service.id)
+        if (!tech || !tech.services) return 'Technician not found'
+        const serviceIDs = tech.services.map((service) =>
+          typeof service.service === 'object' ? service.service?.id : service.service,
+        )
+
         if (!serviceIDs.includes(data.service))
           return 'This Technician does not provide this service'
         else return true
@@ -75,6 +87,16 @@ export const Jobs: CollectionConfig = {
       name: 'notes',
       label: 'Notes',
       type: 'text',
+    },
+    {
+      name: 'duration',
+      label: 'Job Duration',
+      type: 'number',
+      admin: {
+        description:
+          'Duration in minutes (This is automatically calculated based on setting duration at the technician level)',
+        readOnly: true,
+      },
     },
   ],
 }
