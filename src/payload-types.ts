@@ -184,6 +184,10 @@ export interface Technician {
   techniciansId?: string | null;
   name: string;
   profilePicture?: (number | null) | Media;
+  /**
+   * Add a brief bio for the technician
+   */
+  bio?: string | null;
   email: string;
   phone?: string | null;
   address?: string | null;
@@ -442,6 +446,7 @@ export interface TechniciansSelect<T extends boolean = true> {
   techniciansId?: T;
   name?: T;
   profilePicture?: T;
+  bio?: T;
   email?: T;
   phone?: T;
   address?: T;

@@ -1,4 +1,5 @@
 import { generateIdHook } from '@/hooks/beforeChangeHooks'
+import { operations } from 'node_modules/payload/dist/query-presets/types'
 import type { CollectionConfig, Validate, Where } from 'payload'
 
 // Map day names to numbers for comparison between StoreSettings and Technicians
@@ -74,6 +75,13 @@ export const Technicians: CollectionConfig = {
               name: 'profilePicture',
               type: 'upload',
               relationTo: 'media',
+            },
+            {
+              name: 'bio',
+              type: 'textarea',
+              admin: {
+                description: 'Add a brief bio for the technician',
+              },
             },
             {
               name: 'email',

@@ -10,7 +10,7 @@ export const fetchTechByService = async (serviceId: string) => {
     const data = await response.json()
 
     // // Delay the response to simulate a slow network
-    // await new Promise((resolve) => setTimeout(resolve, 2000))
+    // await new Promise((resolve) => setTimeout(resolve, 1000))
     return data
   } catch (error) {
     return {

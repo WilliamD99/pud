@@ -4,7 +4,8 @@ import { fetchTechByService } from '@/lib/fetchClient'
 import { cn } from '@/lib/utils'
 import { Technician } from '@/payload-types'
 import { useQuery } from '@tanstack/react-query'
-import { Loader2, Star } from 'lucide-react'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Star } from 'lucide-react'
 import Image from 'next/image'
 import { useEffect } from 'react'
 
@@ -37,7 +38,6 @@ export function TechnicianSelector({
         techList.map((tech: Technician) => {
           const isSelected = selectedTechnician?.id === tech.id
           // Get the selected service duration for the selected technician
-          console.log(tech.services)
           const selectedServiceDuration = tech.services?.find((service) => {
             if (typeof service.service === 'object') {
               let serviceId = service.service?.servicesId
@@ -45,25 +45,31 @@ export function TechnicianSelector({
             }
             return false
           })?.duration
+
+          const profilePicture =
+            typeof tech.profilePicture === 'object' ? tech.profilePicture?.url : null
+
           return (
             <button
               key={tech.id}
               type="button"
               onClick={() => onSelectTechnician(tech)}
               className={cn(
-                'flex flex-col items-center rounded-lg border-2 p-4 text-center transition-all hover:border-primary/50',
+                'flex flex-col items-center rounded-lg border-2 p-4 text-center transition-all hover:border-primary/50 cursor-pointer',
                 isSelected
                   ? 'border-primary bg-blue-500/5'
                   : 'border-border bg-card hover:bg-accent/50',
               )}
             >
               <div className="relative h-16 w-16 overflow-hidden rounded-full border-2 border-border">
-                {/* <Image
-                src={tech.image || '/placeholder.svg'}
-                alt={tech.name}
-                fill
-                className="object-cover"
-              /> */}
+                {profilePicture && (
+                  <Image
+                    src={`${process.env.NEXT_PUBLIC_APP_URL}${profilePicture}`}
+                    alt={tech.name}
+                    fill
+                    className="object-cover"
+                  />
+                )}
               </div>
               <h3 className="mt-3 font-medium text-foreground">{tech.name}</h3>
               {/* <p className="text-xs text-muted-foreground">{tech.role}</p> */}
@@ -77,11 +83,17 @@ export function TechnicianSelector({
             </button>
           )
         })}
-      {isFetching && (
-        <div className="flex items-center justify-center h-full">
-          <Loader2 className="h-4 w-4 animate-spin" />
-        </div>
-      )}
+      {!!isFetching &&
+        Array.from({ length: 3 }).map((_, i) => (
+          <div
+            key={i}
+            className="flex flex-col items-center rounded-lg border-2 border-border bg-card p-4"
+          >
+            <Skeleton className="h-16 w-16 rounded-full bg-white" />
+            <Skeleton className="mt-4 h-4 w-20 bg-white" />
+            <Skeleton className="mt-4 h-4 w-16 bg-white" />
+          </div>
+        ))}
     </div>
   )
 }

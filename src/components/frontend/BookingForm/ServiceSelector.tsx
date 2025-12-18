@@ -36,6 +36,8 @@ export default function ServiceSelector({
     const service = services.find((s) => s.servicesId === serviceId)
     if (service?.subServices && service.subServices.length > 0) {
       setExpandedService(expandedService === serviceId ? null : serviceId)
+      // Also select the parent service to trigger technician fetch
+      onSelectService(serviceId, null)
     } else {
       onSelectService(serviceId, null)
     }

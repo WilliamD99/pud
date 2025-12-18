@@ -13,7 +13,15 @@ const nextConfig = {
     return webpackConfig
   },
   images: {
-    remotePatterns: [new URL('https://picsum.photos/id/**')],
+    remotePatterns: [
+      new URL('https://picsum.photos/id/**'),
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+        port: '3000',
+        pathname: '/api/media/**',
+      },
+    ],
   },
 }
 

@@ -46,7 +46,7 @@ export default function CalendarPicker({
           const day = date.getDay()
           return !openWeekdays.includes(day.toString())
         }}
-        className="rounded-lg border border-border w-full"
+        className="rounded-lg border border-border w-full [&_button[data-selected-single=true]]:bg-blue-500 [&_button[data-selected-single=true]]:text-white"
       />
     </div>
   )

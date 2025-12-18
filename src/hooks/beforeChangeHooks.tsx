@@ -3,9 +3,15 @@ import { nanoid } from 'nanoid'
 import { CollectionBeforeChangeHook } from 'payload'
 
 // Use this hook for generating a unique id for each collection
-export const generateIdHook: CollectionBeforeChangeHook = async ({ data, collection }) => {
-  if (!data[`${collection.slug}Id`]) {
-    data[`${collection.slug}Id`] = `${collection.slug}${nanoid(10)}`
+export const generateIdHook: CollectionBeforeChangeHook = async ({
+  data,
+  collection,
+  operation,
+}) => {
+  if (operation === 'create') {
+    if (!data[`${collection.slug}Id`]) {
+      data[`${collection.slug}Id`] = `${collection.slug}${nanoid(10)}`
+    }
   }
   return data
 }

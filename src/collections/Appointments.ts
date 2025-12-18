@@ -127,7 +127,6 @@ export const Appointments: CollectionConfig = {
             },
           })
           let timeSlots = []
-
           if (data.docs.length > 0) {
             for (const appointment of data.docs) {
               for (const job of appointment.jobs) {
