@@ -43,6 +43,11 @@ export default function CalendarPicker({
         }}
         disabled={(date) => {
           if (disabled) return true
+          // Disable past dates
+          const today = new Date()
+          today.setHours(0, 0, 0, 0)
+          if (date < today) return true
+          // Disable days not in the available weekdays
           const day = date.getDay()
           return !openWeekdays.includes(day.toString())
         }}

@@ -1,7 +1,8 @@
 import { generateIdHook } from '@/hooks/beforeChangeHooks'
-import type { CollectionBeforeChangeHook, CollectionConfig } from 'payload'
+import type { CollectionAfterChangeHook, CollectionConfig } from 'payload'
 
-const revalidateOnUpDateAfterChangeHook: CollectionBeforeChangeHook = async ({ data }) => {
+const revalidateOnUpdateAfterChangeHook: CollectionAfterChangeHook = async ({ doc, operation }) => {
+  if (operation !== 'update') return doc
   try {
     await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/revalidate-service`, {
       method: 'POST',
@@ -15,7 +16,7 @@ const revalidateOnUpDateAfterChangeHook: CollectionBeforeChangeHook = async ({ d
   } catch (err) {
     console.error(err)
   }
-  return data
+  return doc
 }
 
 export const Services: CollectionConfig = {
@@ -35,7 +36,7 @@ export const Services: CollectionConfig = {
   disableDuplicate: true,
   hooks: {
     beforeChange: [generateIdHook],
-    afterChange: [revalidateOnUpDateAfterChangeHook],
+    afterChange: [revalidateOnUpdateAfterChangeHook],
   },
   fields: [
     {
@@ -113,16 +114,16 @@ export const Services: CollectionConfig = {
         beforeChange: [
           // Auto sync lookup the min and max price of sub services, then put it to the parent price
           async ({ siblingData, value, req }) => {
-            let price = []
+            const price = []
             if (value.length > 0) {
               for (const subService of value) {
                 try {
-                  let subServiceData = await req.payload.findByID({
+                  const subServiceData = await req.payload.findByID({
                     collection: 'services',
                     id: subService.subService as number,
                   })
-                  let subServicePriceMin = subServiceData.priceRange?.min || 0
-                  let subServicePriceMax = subServiceData.priceRange?.max || 0
+                  const subServicePriceMin = subServiceData.priceRange?.min || 0
+                  const subServicePriceMax = subServiceData.priceRange?.max || 0
 
                   if (subServicePriceMin !== 0) price.push(subServicePriceMin)
                   if (subServicePriceMax !== 0) price.push(subServicePriceMax)
@@ -141,8 +142,8 @@ export const Services: CollectionConfig = {
                   continue
                 }
               }
-              let min = Math.min(...price)
-              let max = Math.max(...price)
+              const min = Math.min(...price)
+              const max = Math.max(...price)
               siblingData.priceRange = { min, max }
             }
             return value

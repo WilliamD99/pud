@@ -41,7 +41,7 @@ export const fetchParentServices = cache(
   },
 )
 
-// Get services (with sub services)
+// Get services (with sub services) - grouped by category
 export const fetchServices = cache(
   async () => {
     try {
@@ -87,9 +87,26 @@ export const fetchServices = cache(
           ],
         },
       })
-      // console.log(data.docs)
+
+      // Group services by category
+      const groupedServices = data.docs.reduce(
+        (acc, service) => {
+          const category = service.category || 'uncategorized'
+          const existingGroup = acc.find((g) => g.category === category)
+
+          if (existingGroup) {
+            existingGroup.services.push(service)
+          } else {
+            acc.push({ category, services: [service] })
+          }
+
+          return acc
+        },
+        [] as { category: string; services: typeof data.docs }[],
+      )
+
       return {
-        data: data.docs,
+        data: groupedServices,
         status: 200,
       }
     } catch (error) {

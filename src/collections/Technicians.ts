@@ -1,6 +1,5 @@
 import { generateIdHook } from '@/hooks/beforeChangeHooks'
-import { operations } from 'node_modules/payload/dist/query-presets/types'
-import type { CollectionConfig, Validate, Where } from 'payload'
+import type { CollectionConfig, Where } from 'payload'
 
 // Map day names to numbers for comparison between StoreSettings and Technicians
 const dayNameToNumber: Record<string, string> = {

@@ -5,7 +5,6 @@ import { cn } from '@/lib/utils'
 import { Technician } from '@/payload-types'
 import { useQuery } from '@tanstack/react-query'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Star } from 'lucide-react'
 import Image from 'next/image'
 import { useEffect } from 'react'
 
@@ -40,7 +39,7 @@ export function TechnicianSelector({
           // Get the selected service duration for the selected technician
           const selectedServiceDuration = tech.services?.find((service) => {
             if (typeof service.service === 'object') {
-              let serviceId = service.service?.servicesId
+              const serviceId = service.service?.servicesId
               return serviceId?.toString() === selectedService
             }
             return false
@@ -84,7 +83,7 @@ export function TechnicianSelector({
           )
         })}
       {!!isFetching &&
-        Array.from({ length: 3 }).map((_, i) => (
+        Array.from({ length: 1 }).map((_, i) => (
           <div
             key={i}
             className="flex flex-col items-center rounded-lg border-2 border-border bg-card p-4"
