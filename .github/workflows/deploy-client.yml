@@ -10,6 +10,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment: AWS
     env:
       AWS_REGION: ${{ secrets.AWS_REGION }}
 
