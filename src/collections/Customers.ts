@@ -24,6 +24,7 @@ export const Customers: CollectionConfig = {
       return false
     },
     update: ({ req }) => req.user?.role === 'admin',
+    create: () => true,
   },
   disableDuplicate: true,
   hooks: {

@@ -32,10 +32,17 @@ export default function DatePicker({
   selectedTechnician,
 }: DatePickerProps) {
   const [dateIndex, setDateIndex] = useState<number | null>(null)
-  if (!operatingDays || !selectedTechnician) return null
+  if (!operatingDays || !selectedTechnician)
+    return (
+      <div className="h-full flex items-center justify-center">
+        <p className="text-sm text-muted-foreground font-instrument tracking-wide">
+          Please select a technician first to view available dates and times
+        </p>
+      </div>
+    )
 
-  let techAvailability = selectedTechnician.weeklyAvailability || []
-  let techAvailabilityByDay = techAvailability.map((day) => {
+  const techAvailability = selectedTechnician.weeklyAvailability || []
+  const techAvailabilityByDay = techAvailability.map((day) => {
     return day.dayOfWeek
   })
   const openWeekdays = operatingDays.map(
@@ -43,8 +50,8 @@ export default function DatePicker({
   )
 
   // Only show the date that is both is in the techAvailabilityByDay and is in the operatingDays
-  let availableDates = techAvailabilityByDay.filter((day) => openWeekdays.includes(day))
-  let availableTimeRanges =
+  const availableDates = techAvailabilityByDay.filter((day) => openWeekdays.includes(day))
+  const availableTimeRanges =
     techAvailability.find((day) => day.dayOfWeek === dateIndex?.toString())?.timeRanges || []
   return (
     <div className="grid gap-6 md:grid-cols-2 relative">

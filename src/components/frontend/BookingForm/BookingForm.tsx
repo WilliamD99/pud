@@ -1,6 +1,5 @@
 'use client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
 import React, { useState } from 'react'
 import ServiceSelector from './Service/ServiceSelector'
 import { TechnicianSelector } from './TechnicianSelector'
@@ -9,7 +8,9 @@ import CustomerInformation from './CustomerInformation'
 import DatePicker from './DatePicker'
 import { BookingSchema, combineDateAndTime } from '@/lib/zod/booking-schema'
 import { createAppointment } from '@/lib/fetchClient'
-
+import Summary from './Summary'
+import { getDisplayService } from './Summary/utils'
+import { useRouter } from 'next/navigation'
 export interface GroupedServices {
   category: string
   services: Service[]
@@ -32,6 +33,7 @@ interface FormErrors {
 }
 
 export default function BookingForm({ services, operatingHours }: BookingFormProps) {
+  const router = useRouter()
   const [date, setDate] = useState<Date | undefined>(undefined)
   const [selectedTime, setSelectedTime] = useState<string | null>(null)
 
@@ -97,6 +99,9 @@ export default function BookingForm({ services, operatingHours }: BookingFormPro
       setErrors((prev) => ({ ...prev, [name]: undefined }))
     }
   }
+
+  // Get the service to display in Summary
+  const displayServiceObj = getDisplayService(selectedService, selectedVariant, services)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -188,13 +193,13 @@ export default function BookingForm({ services, operatingHours }: BookingFormPro
       setSubmitStatus('error')
       setSubmitMessage('An unexpected error occurred. Please try again.')
     } finally {
-      setIsSubmitting(false)
+      router.push('/book/thank-you')
     }
   }
 
   return (
-    <form onSubmit={handleSubmit}>
-      <div className="grid gap-6 lg-grid-cols-3">
+    <form onSubmit={handleSubmit} className="grid grid-cols-3 gap-4 relative">
+      <div className="col-span-2 grid gap-6 lg-grid-cols-3">
         <div className="lg:col-span-2 space-y-6">
           {/* Service Selector */}
           <Card className="border-border shadow-sm">
@@ -290,29 +295,17 @@ export default function BookingForm({ services, operatingHours }: BookingFormPro
               phone: errors.phone,
             }}
           />
-
-          {/* Submit Button */}
-          <Card className="border-border shadow-sm">
-            <CardContent className="pt-6">
-              {submitStatus === 'success' && (
-                <div className="mb-4 rounded-lg bg-green-50 border border-green-200 p-4">
-                  <p className="text-green-800 font-medium">{submitMessage}</p>
-                </div>
-              )}
-              {submitStatus === 'error' && (
-                <div className="mb-4 rounded-lg bg-red-50 border border-red-200 p-4">
-                  <p className="text-red-800 font-medium">{submitMessage}</p>
-                </div>
-              )}
-              <Button type="submit" className="w-full" size="lg" disabled={isSubmitting}>
-                {isSubmitting ? 'Booking...' : 'Book Appointment'}
-              </Button>
-            </CardContent>
-          </Card>
         </div>
 
         {/* Booking Summary */}
       </div>
+      <Summary
+        selectedService={displayServiceObj}
+        selectedTechnician={selectedTech}
+        date={date}
+        time={selectedTime}
+        isSubmitting={isSubmitting}
+      />
     </form>
   )
 }

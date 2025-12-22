@@ -7,16 +7,14 @@ import type { CollectionConfig, Validate } from 'payload'
 
 export const Appointments: CollectionConfig = {
   slug: 'appointments',
-
-  access: {
-    read: () => {
-      return true
-    },
-  },
   disableDuplicate: true,
   hooks: {
     // beforeChange: [validateDuplicateServiceHook],
     // afterOperation: [syncJobsToAppointmentHook],
+  },
+  access: {
+    read: () => true,
+    create: () => true,
   },
   fields: [
     {
@@ -126,7 +124,7 @@ export const Appointments: CollectionConfig = {
               time: true,
             },
           })
-          let timeSlots = []
+          const timeSlots = []
           if (data.docs.length > 0) {
             for (const appointment of data.docs) {
               for (const job of appointment.jobs) {

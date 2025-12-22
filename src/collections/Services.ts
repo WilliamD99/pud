@@ -33,6 +33,9 @@ export const Services: CollectionConfig = {
       }
     },
   },
+  access: {
+    read: () => true,
+  },
   disableDuplicate: true,
   hooks: {
     beforeChange: [generateIdHook],

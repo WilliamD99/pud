@@ -11,6 +11,10 @@ export const Jobs: CollectionConfig = {
   hooks: {
     beforeChange: [generateJobNameHook, updateJobDurationHook],
   },
+  access: {
+    read: () => true,
+    create: () => true,
+  },
   fields: [
     {
       name: 'name',
