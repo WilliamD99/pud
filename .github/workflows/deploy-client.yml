@@ -1,0 +1,89 @@
+name: Deploy Payload Client
+
+on:
+  workflow_dispatch:
+    inputs:
+      client_id:
+        description: 'Client ID (used for S3 prefix and IAM username)'
+        required: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+
+    steps:
+      # 1. Checkout code
+      - uses: actions/checkout@v3
+
+      # 2. Configure AWS CLI with admin credentials
+      - name: Configure AWS CLI
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      # 3. Create IAM user, policy, access keys
+      - name: Create IAM user & keys
+        id: iam
+        run: |
+          CLIENT=${{ github.event.inputs.client_id }}
+
+          # Create IAM user
+          aws iam create-user --user-name payload-$CLIENT || true
+
+          # Create policy
+          cat > policy.json <<EOF
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": ["s3:GetObject","s3:PutObject","s3:DeleteObject"],
+                "Resource": "arn:aws:s3:::shared-bucket/free/$CLIENT/*"
+              },
+              {
+                "Effect": "Allow",
+                "Action": "s3:ListBucket",
+                "Resource": "arn:aws:s3:::shared-bucket",
+                "Condition": { "StringLike": { "s3:prefix": "free/$CLIENT/*" } }
+              }
+            ]
+          }
+          EOF
+
+          aws iam put-user-policy \
+            --user-name payload-$CLIENT \
+            --policy-name payload-s3-$CLIENT \
+            --policy-document file://policy.json
+
+          # Create access key
+          aws iam create-access-key --user-name payload-$CLIENT > keys.json
+
+          # Output keys to GitHub Actions
+          echo "::set-output name=access_key::$(jq -r .AccessKey.AccessKeyId keys.json)"
+          echo "::set-output name=secret_key::$(jq -r .AccessKey.SecretAccessKey keys.json)"
+
+      # 4. Install Vercel CLI
+      - name: Install Vercel CLI
+        run: npm install -g vercel
+
+      # 5. Inject env vars into Vercel
+      - name: Add env vars to Vercel
+        run: |
+          CLIENT=${{ github.event.inputs.client_id }}
+          ACCESS_KEY=${{ steps.iam.outputs.access_key }}
+          SECRET_KEY=${{ steps.iam.outputs.secret_key }}
+
+          # Add or update env variables for the Vercel project
+          vercel env add S3_ACCESS_KEY production $ACCESS_KEY --yes --token ${{ secrets.VERCEL_TOKEN }}
+          vercel env add S3_SECRET_KEY production $SECRET_KEY --yes --token ${{ secrets.VERCEL_TOKEN }}
+          vercel env add S3_BUCKET production shared-bucket --yes --token ${{ secrets.VERCEL_TOKEN }}
+          vercel env add S3_BUCKET_PREFIX production free/$CLIENT --yes --token ${{ secrets.VERCEL_TOKEN }}
+
+      # 6. Deploy to Vercel
+      - name: Deploy Payload to Vercel
+        run: |
+          vercel --prod --token ${{ secrets.VERCEL_TOKEN }}
