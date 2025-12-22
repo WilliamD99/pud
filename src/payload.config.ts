@@ -17,6 +17,8 @@ import { Customers } from './collections/Customers'
 // import { AppointmentsCollectionConfig } from './global/collection'
 import { StoreSettings } from './collections/StoreSettings'
 
+import { s3Storage } from '@payloadcms/storage-s3'
+
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
@@ -42,6 +44,21 @@ export default buildConfig({
   sharp,
   plugins: [
     payloadCloudPlugin(),
+    s3Storage({
+      collections: {
+        media: {
+          prefix: `media-${process.env.S3_BUCKET_PREFIX || ''}`,
+        },
+      },
+      bucket: process.env.S3_BUCKET!,
+      config: {
+        credentials: {
+          accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+          secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+        },
+        region: process.env.AWS_REGION!,
+      },
+    }),
     // storage-adapter-placeholder
   ],
   // globals: [EmailConfig, AppointmentsCollectionConfig],
