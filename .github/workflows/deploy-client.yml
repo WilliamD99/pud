@@ -13,12 +13,13 @@ jobs:
     environment: AWS
     env:
       AWS_REGION: ${{ secrets.AWS_REGION }}
+      CLIENT: ${{ github.event.inputs.client_id }}
 
     steps:
       # 1. Checkout code
       - uses: actions/checkout@v3
 
-      # 2. Configure AWS CLI with admin credentials
+      # 2. Configure AWS CLI
       - name: Configure AWS CLI
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -26,16 +27,25 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      # 3. Create IAM user, policy, access keys
+      # 3. Create IAM user, policy, access keys (idempotent)
       - name: Create IAM user & keys
         id: iam
         run: |
-          CLIENT=${{ github.event.inputs.client_id }}
+          set -euo pipefail
 
-          # Create IAM user
-          aws iam create-user --user-name payload-$CLIENT || true
+          USER="payload-$CLIENT"
 
-          # Create policy
+          aws iam create-user --user-name "$USER" 2>/dev/null || true
+
+          # Delete existing access keys (IAM limit safety)
+          for KEY in $(aws iam list-access-keys \
+            --user-name "$USER" \
+            --query 'AccessKeyMetadata[].AccessKeyId' \
+            --output text); do
+            aws iam delete-access-key --user-name "$USER" --access-key-id "$KEY"
+          done
+
+          # Policy
           cat > policy.json <<EOF
           {
             "Version": "2012-10-17",
@@ -49,42 +59,94 @@ jobs:
                 "Effect": "Allow",
                 "Action": "s3:ListBucket",
                 "Resource": "arn:aws:s3:::shared-bucket",
-                "Condition": { "StringLike": { "s3:prefix": "free/$CLIENT/*" } }
+                "Condition": {
+                  "StringLike": {
+                    "s3:prefix": "free/$CLIENT/*"
+                  }
+                }
               }
             ]
           }
           EOF
 
           aws iam put-user-policy \
-            --user-name payload-$CLIENT \
-            --policy-name payload-s3-$CLIENT \
+            --user-name "$USER" \
+            --policy-name "payload-s3-$CLIENT" \
             --policy-document file://policy.json
 
-          # Create access key
-          aws iam create-access-key --user-name payload-$CLIENT > keys.json
+          # Create new access key
+          aws iam create-access-key --user-name "$USER" > keys.json
 
-          # Output keys to GitHub Actions
-          echo "::set-output name=access_key::$(jq -r .AccessKey.AccessKeyId keys.json)"
-          echo "::set-output name=secret_key::$(jq -r .AccessKey.SecretAccessKey keys.json)"
+          echo "access_key=$(jq -r .AccessKey.AccessKeyId keys.json)" >> $GITHUB_OUTPUT
+          echo "secret_key=$(jq -r .AccessKey.SecretAccessKey keys.json)" >> $GITHUB_OUTPUT
 
       # 4. Install Vercel CLI
       - name: Install Vercel CLI
         run: npm install -g vercel
 
-      # 5. Inject env vars into Vercel
+      # 5. Link Vercel project (non-interactive)
+      - name: Link Vercel project
+        run: |
+          vercel link --yes \
+            --project ${{ secrets.VERCEL_PROJECT_ID }} \
+            --token ${{ secrets.VERCEL_TOKEN }}
+
+      # 6. Inject env vars into Vercel
       - name: Add env vars to Vercel
         run: |
-          CLIENT=${{ github.event.inputs.client_id }}
-          ACCESS_KEY=${{ steps.iam.outputs.access_key }}
-          SECRET_KEY=${{ steps.iam.outputs.secret_key }}
+          set -euo pipefail
 
-          # Add or update env variables for the Vercel project
-          vercel env add S3_ACCESS_KEY production $ACCESS_KEY --yes --token ${{ secrets.VERCEL_TOKEN }}
-          vercel env add S3_SECRET_KEY production $SECRET_KEY --yes --token ${{ secrets.VERCEL_TOKEN }}
-          vercel env add S3_BUCKET production shared-bucket --yes --token ${{ secrets.VERCEL_TOKEN }}
-          vercel env add S3_BUCKET_PREFIX production free/$CLIENT --yes --token ${{ secrets.VERCEL_TOKEN }}
+          echo "${{ steps.iam.outputs.access_key }}" \
+            | vercel env add S3_ACCESS_KEY production --yes --token ${{ secrets.VERCEL_TOKEN }}
 
-      # 6. Deploy to Vercel
+          echo "${{ steps.iam.outputs.secret_key }}" \
+            | vercel env add S3_SECRET_KEY production --yes --token ${{ secrets.VERCEL_TOKEN }}
+
+          echo "shared-bucket" \
+            | vercel env add S3_BUCKET production --yes --token ${{ secrets.VERCEL_TOKEN }}
+
+          echo "free/$CLIENT" \
+            | vercel env add S3_BUCKET_PREFIX production --yes --token ${{ secrets.VERCEL_TOKEN }}
+
+      # 7. Deploy
       - name: Deploy Payload to Vercel
         run: |
           vercel --prod --token ${{ secrets.VERCEL_TOKEN }}
+
+  cleanup:
+    if: failure()
+    runs-on: ubuntu-latest
+    environment: AWS
+    env:
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      CLIENT: ${{ github.event.inputs.client_id }}
+
+    steps:
+      - name: Configure AWS CLI
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Cleanup IAM resources
+        run: |
+          set -euo pipefail
+
+          USER="payload-$CLIENT"
+
+          # Delete access keys
+          for KEY in $(aws iam list-access-keys \
+            --user-name "$USER" \
+            --query 'AccessKeyMetadata[].AccessKeyId' \
+            --output text); do
+            aws iam delete-access-key --user-name "$USER" --access-key-id "$KEY"
+          done
+
+          # Delete inline policy
+          aws iam delete-user-policy \
+            --user-name "$USER" \
+            --policy-name "payload-s3-$CLIENT" || true
+
+          # Delete user
+          aws iam delete-user --user-name "$USER" || true
