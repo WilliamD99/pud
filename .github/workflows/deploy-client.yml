@@ -102,9 +102,8 @@ jobs:
       # 6. Link repo to Vercel project
       - name: Link Vercel project
         run: |
-          vercel link --yes \
+          vercel link \
             --project ${{ steps.vercel.outputs.project_id }} \
-            --scope ${{ secrets.VERCEL_TEAM_ID }} \
             --token ${{ secrets.VERCEL_TOKEN }}
 
       # 7. Inject env vars into Vercel
@@ -113,19 +112,18 @@ jobs:
           set -euo pipefail
 
           TOKEN="${{ secrets.VERCEL_TOKEN }}"
-          SCOPE="${{ secrets.VERCEL_TEAM_ID }}"
 
           echo "${{ steps.iam.outputs.access_key }}" \
-            | vercel env add S3_ACCESS_KEY production --yes --token "$TOKEN" --scope "$SCOPE"
+            | vercel env add S3_ACCESS_KEY production --token "$TOKEN" 
 
           echo "${{ steps.iam.outputs.secret_key }}" \
-            | vercel env add S3_SECRET_KEY production --yes --token "$TOKEN" --scope "$SCOPE"
+            | vercel env add S3_SECRET_KEY production --token "$TOKEN" 
 
           echo "shared-bucket" \
-            | vercel env add S3_BUCKET production --yes --token "$TOKEN" --scope "$SCOPE"
+            | vercel env add S3_BUCKET production --token "$TOKEN"
 
           echo "free/$CLIENT" \
-            | vercel env add S3_BUCKET_PREFIX production --yes --token "$TOKEN" --scope "$SCOPE"
+            | vercel env add S3_BUCKET_PREFIX production --token "$TOKEN"
 
       # 8. Deploy
       - name: Deploy Payload to Vercel
