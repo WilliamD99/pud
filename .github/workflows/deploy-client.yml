@@ -27,7 +27,7 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      # 3. Create IAM user, policy, access keys (idempotent)
+      # 3. Create IAM user & keys (idempotent)
       - name: Create IAM user & keys
         id: iam
         run: |
@@ -74,7 +74,6 @@ jobs:
             --policy-name "payload-s3-$CLIENT" \
             --policy-document file://policy.json
 
-          # Create new access key
           aws iam create-access-key --user-name "$USER" > keys.json
 
           echo "access_key=$(jq -r .AccessKey.AccessKeyId keys.json)" >> $GITHUB_OUTPUT
@@ -84,34 +83,67 @@ jobs:
       - name: Install Vercel CLI
         run: npm install -g vercel
 
-      # 5. Link Vercel project (non-interactive)
+      # 5. Create Vercel project + get project ID
+      - name: Create & resolve Vercel project
+        id: vercel
+        run: |
+          set -euo pipefail
+
+          PROJECT_NAME="payload-$CLIENT"
+          TOKEN="${{ secrets.VERCEL_TOKEN }}"
+          SCOPE="${{ secrets.VERCEL_TEAM_ID }}"
+
+          vercel project add "$PROJECT_NAME" \
+            --scope "$SCOPE" \
+            --token "$TOKEN" \
+            --yes || true
+
+          PROJECT_ID=$(vercel project ls --json \
+            --scope "$SCOPE" \
+            --token "$TOKEN" \
+            | jq -r ".[] | select(.name==\"$PROJECT_NAME\") | .id")
+
+          if [ -z "$PROJECT_ID" ] || [ "$PROJECT_ID" = "null" ]; then
+            echo "❌ Failed to resolve Vercel project ID"
+            exit 1
+          fi
+
+          echo "project_id=$PROJECT_ID" >> $GITHUB_OUTPUT
+
+      # 6. Link repo to Vercel project
       - name: Link Vercel project
         run: |
           vercel link --yes \
-            --project ${{ secrets.VERCEL_PROJECT_ID }} \
+            --project ${{ steps.vercel.outputs.project_id }} \
+            --scope ${{ secrets.VERCEL_TEAM_ID }} \
             --token ${{ secrets.VERCEL_TOKEN }}
 
-      # 6. Inject env vars into Vercel
+      # 7. Inject env vars into Vercel
       - name: Add env vars to Vercel
         run: |
           set -euo pipefail
 
+          TOKEN="${{ secrets.VERCEL_TOKEN }}"
+          SCOPE="${{ secrets.VERCEL_TEAM_ID }}"
+
           echo "${{ steps.iam.outputs.access_key }}" \
-            | vercel env add S3_ACCESS_KEY production --yes --token ${{ secrets.VERCEL_TOKEN }}
+            | vercel env add S3_ACCESS_KEY production --yes --token "$TOKEN" --scope "$SCOPE"
 
           echo "${{ steps.iam.outputs.secret_key }}" \
-            | vercel env add S3_SECRET_KEY production --yes --token ${{ secrets.VERCEL_TOKEN }}
+            | vercel env add S3_SECRET_KEY production --yes --token "$TOKEN" --scope "$SCOPE"
 
           echo "shared-bucket" \
-            | vercel env add S3_BUCKET production --yes --token ${{ secrets.VERCEL_TOKEN }}
+            | vercel env add S3_BUCKET production --yes --token "$TOKEN" --scope "$SCOPE"
 
           echo "free/$CLIENT" \
-            | vercel env add S3_BUCKET_PREFIX production --yes --token ${{ secrets.VERCEL_TOKEN }}
+            | vercel env add S3_BUCKET_PREFIX production --yes --token "$TOKEN" --scope "$SCOPE"
 
-      # 7. Deploy
+      # 8. Deploy
       - name: Deploy Payload to Vercel
         run: |
-          vercel --prod --token ${{ secrets.VERCEL_TOKEN }}
+          vercel deploy --prod \
+            --token ${{ secrets.VERCEL_TOKEN }} \
+            --scope ${{ secrets.VERCEL_TEAM_ID }}
 
   cleanup:
     if: failure()
@@ -135,7 +167,6 @@ jobs:
 
           USER="payload-$CLIENT"
 
-          # Delete access keys
           for KEY in $(aws iam list-access-keys \
             --user-name "$USER" \
             --query 'AccessKeyMetadata[].AccessKeyId' \
@@ -143,10 +174,8 @@ jobs:
             aws iam delete-access-key --user-name "$USER" --access-key-id "$KEY"
           done
 
-          # Delete inline policy
           aws iam delete-user-policy \
             --user-name "$USER" \
             --policy-name "payload-s3-$CLIENT" || true
 
-          # Delete user
           aws iam delete-user --user-name "$USER" || true
