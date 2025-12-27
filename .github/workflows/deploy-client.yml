@@ -89,7 +89,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          PROJECT_NAME="payload-$CLIENT"
+          PROJECT_NAME="payload_$CLIENT"
           TOKEN="${{ secrets.VERCEL_TOKEN }}"
           SCOPE="${{ secrets.VERCEL_TEAM_ID }}"
 
