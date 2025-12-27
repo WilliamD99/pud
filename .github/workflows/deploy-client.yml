@@ -93,11 +93,11 @@ jobs:
           TOKEN="${{ secrets.VERCEL_TOKEN }}"
           SCOPE="${{ secrets.VERCEL_TEAM_ID }}"
       
-          vercel project add "$PROJECT_NAME" \ --token "$TOKEN"
+          vercel project add "$PROJECT_NAME" --token "$TOKEN"
       
           PROJECT_ID=$(vercel project ls --json \
             --token "$TOKEN" \
-            | jq -r ".projects[] | select(.name==\"$PROJECT_NAME\") | .id")
+            | jq -r ".[] | select(.name==\"$PROJECT_NAME\") | .id")
       
           if [ -z "$PROJECT_ID" ] || [ "$PROJECT_ID" = "null" ]; then
             echo "❌ Failed to resolve Vercel project ID"
