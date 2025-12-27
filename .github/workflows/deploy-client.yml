@@ -93,13 +93,9 @@ jobs:
           TOKEN="${{ secrets.VERCEL_TOKEN }}"
           SCOPE="${{ secrets.VERCEL_TEAM_ID }}"
       
-          vercel project add "$PROJECT_NAME" \
-            --scope "$SCOPE" \
-            --token "$TOKEN" \
-            --yes || true
+          vercel project add "$PROJECT_NAME"
       
           PROJECT_ID=$(vercel project ls --json \
-            --scope "$SCOPE" \
             --token "$TOKEN" \
             | jq -r ".projects[] | select(.name==\"$PROJECT_NAME\") | .id")
       
