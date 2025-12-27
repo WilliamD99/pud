@@ -88,27 +88,28 @@ jobs:
         id: vercel
         run: |
           set -euo pipefail
-
+      
           PROJECT_NAME="payload-$CLIENT"
           TOKEN="${{ secrets.VERCEL_TOKEN }}"
           SCOPE="${{ secrets.VERCEL_TEAM_ID }}"
-
+      
           vercel project add "$PROJECT_NAME" \
             --scope "$SCOPE" \
             --token "$TOKEN" \
             --yes || true
-
+      
           PROJECT_ID=$(vercel project ls --json \
             --scope "$SCOPE" \
             --token "$TOKEN" \
-            | jq -r ".[] | select(.name==\"$PROJECT_NAME\") | .id")
-
+            | jq -r ".projects[] | select(.name==\"$PROJECT_NAME\") | .id")
+      
           if [ -z "$PROJECT_ID" ] || [ "$PROJECT_ID" = "null" ]; then
             echo "❌ Failed to resolve Vercel project ID"
             exit 1
           fi
-
+      
           echo "project_id=$PROJECT_ID" >> $GITHUB_OUTPUT
+
 
       # 6. Link repo to Vercel project
       - name: Link Vercel project
