@@ -102,7 +102,7 @@ jobs:
       # 6. Link repo to Vercel project
       - name: Link Vercel project
         run: |
-          vercel link \
+          vercel link --yes \
             --project ${{ steps.vercel.outputs.project_id }} \
             --token ${{ secrets.VERCEL_TOKEN }}
 
