@@ -18,6 +18,7 @@ import { Customers } from './collections/Customers'
 import { StoreSettings } from './collections/StoreSettings'
 
 import { s3Storage } from '@payloadcms/storage-s3'
+import { EmailConfig } from './global/email'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -61,8 +62,7 @@ export default buildConfig({
     }),
     // storage-adapter-placeholder
   ],
-  // globals: [EmailConfig, AppointmentsCollectionConfig],
-  globals: [StoreSettings],
+  globals: [StoreSettings, EmailConfig],
   csrf: [], // whitelist of domains to allow cookie auth from
   cors: ['http://localhost:3000', 'localhost:3001'],
 })

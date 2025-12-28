@@ -11,7 +11,7 @@ export async function sendEmail(req: PayloadRequest, to: string, subject: string
     slug: 'emailSettings',
   })
   const apiKey = emailConfig.apiKey
-  const sender = emailConfig.sender
+  const sender = 'emailConfig.sender'
 
   const emailAPI = new TransactionalEmailsApi()
   emailAPI.setApiKey(TransactionalEmailsApiApiKeys.apiKey, apiKey)

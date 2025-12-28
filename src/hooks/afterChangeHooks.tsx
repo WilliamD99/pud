@@ -8,7 +8,7 @@ export const appointmentConfirmationEmailHook: CollectionAfterChangeHook = async
   doc,
   operation,
 }) => {
-  console.log(doc)
+  if (operation !== 'create') return
   const thisAppointment = await req.payload
     .findByID({
       collection: 'appointments',
@@ -20,7 +20,7 @@ export const appointmentConfirmationEmailHook: CollectionAfterChangeHook = async
       return
     })
   if (!thisAppointment) return
-  const jobs = thisAppointment.job || []
+  const jobs = thisAppointment.jobs || []
   const technicians = jobs.map((job: any) => job.technician).filter(Boolean)
   const emails = [...new Set(technicians.map((t: any) => t.email))]
   for (const email of emails) {
@@ -55,33 +55,33 @@ export const appointmentConfirmationEmailHook: CollectionAfterChangeHook = async
 }
 
 // Use this hook for syncing jobs to an appointment when an appointment is created
-export const syncJobsToAppointmentHook: CollectionAfterOperationHook = async ({
-  req,
-  result,
-  // doc,
-  operation,
-}) => {
-  if (operation === 'create') {
-    const typedResult = result as Appointment
-    const jobsToUpdate = typedResult.jobs || []
+// export const syncJobsToAppointmentHook: CollectionAfterOperationHook = async ({
+//   req,
+//   result,
+//   // doc,
+//   operation,
+// }) => {
+//   if (operation === 'create') {
+//     const typedResult = result as Appointment
+//     const jobsToUpdate = typedResult.jobs || []
 
-    for (const job of jobsToUpdate) {
-      // Won't work because the appointment is not created yet
-      await req.payload
-        .update({
-          collection: 'jobs',
-          id: job.job as number,
-          data: {
-            appointment: typedResult.id,
-          },
-          req,
-        })
-        .catch((error) => {
-          console.error(error)
-        })
-    }
-  }
-}
+//     for (const job of jobsToUpdate) {
+//       // Won't work because the appointment is not created yet
+//       await req.payload
+//         .update({
+//           collection: 'jobs',
+//           id: job.jobs as number,
+//           data: {
+//             appointment: typedResult.id,
+//           },
+//           req,
+//         })
+//         .catch((error) => {
+//           console.error(error)
+//         })
+//     }
+//   }
+// }
 
 // Use this hook to create a record in the Tech/Customer Schema when a user is created
 export const createTechOrCustomerHook: CollectionAfterChangeHook = async ({

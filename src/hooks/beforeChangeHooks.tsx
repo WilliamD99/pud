@@ -36,9 +36,12 @@ export const generateJobNameHook: CollectionBeforeChangeHook = async ({ data, re
 // Use this hook to validate no duplicate service within an appointment
 export const validateDuplicateServiceHook: CollectionBeforeChangeHook = async ({ req, data }) => {
   const collectionConfig = await req.payload.findGlobal({
-    slug: 'collectionConfig',
+    slug: 'store-settings',
+    select: {
+      allowDuplicateServiceInAppointment: true,
+    },
   })
-  if (!collectionConfig.appointmentconfig?.allowDuplicate) {
+  if (!collectionConfig?.allowDuplicateServiceInAppointment) {
     return data
   }
   const jobs = data.jobs
@@ -81,5 +84,14 @@ export const updateJobDurationHook: CollectionBeforeChangeHook = async ({ req, d
   } catch (error) {
     console.log(error)
     return data
+  }
+}
+
+// Use this hook to inject the tenant id into each records
+// Tenant id is used to identify which tenant the record belongs to
+export const injectTenantIdHook: CollectionBeforeChangeHook = async ({ data }) => {
+  return {
+    ...data,
+    tenantId: process.env.NEXT_PUBLIC_TENANT_ID || '',
   }
 }

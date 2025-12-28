@@ -222,6 +222,21 @@ export const StoreSettings: GlobalConfig = {
             },
           ],
         },
+        {
+          label: 'Admin Settings',
+          fields: [
+            {
+              name: 'allowDuplicateServiceInAppointment',
+              label: 'Allow Duplicate Service In Appointment',
+              type: 'checkbox',
+              defaultValue: false,
+              admin: {
+                description:
+                  'If checked, the same service can be added multiple times to an appointment',
+              },
+            },
+          ],
+        },
       ],
     },
   ],

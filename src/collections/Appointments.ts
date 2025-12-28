@@ -1,22 +1,31 @@
+import { appointmentConfirmationEmailHook } from '@/hooks/afterChangeHooks'
 import {
-  appointmentConfirmationEmailHook,
-  syncJobsToAppointmentHook,
-} from '@/hooks/afterChangeHooks'
-import { generateIdHook, validateDuplicateServiceHook } from '@/hooks/beforeChangeHooks'
-import type { CollectionConfig, Validate } from 'payload'
+  generateIdHook,
+  injectTenantIdHook,
+  validateDuplicateServiceHook,
+} from '@/hooks/beforeChangeHooks'
+import type { CollectionConfig } from 'payload'
 
 export const Appointments: CollectionConfig = {
   slug: 'appointments',
   disableDuplicate: true,
   hooks: {
-    // beforeChange: [validateDuplicateServiceHook],
-    // afterOperation: [syncJobsToAppointmentHook],
+    beforeChange: [generateIdHook, validateDuplicateServiceHook, injectTenantIdHook],
+    afterChange: [appointmentConfirmationEmailHook],
   },
   access: {
     read: () => true,
     create: () => true,
   },
   fields: [
+    {
+      name: 'appointmentsId',
+      type: 'text',
+      admin: {
+        readOnly: true,
+        hidden: true,
+      },
+    },
     {
       name: 'time',
       type: 'date',
@@ -88,6 +97,15 @@ export const Appointments: CollectionConfig = {
       //     relationTo: 'jobs',
       //   },
       // ],
+    },
+    {
+      name: 'tenantId',
+      type: 'text',
+      index: true,
+      admin: {
+        readOnly: true,
+        hidden: true,
+      },
     },
   ],
   endpoints: [

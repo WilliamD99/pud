@@ -96,9 +96,11 @@ export interface Config {
   };
   globals: {
     'store-settings': StoreSetting;
+    emailSettings: EmailSetting;
   };
   globalsSelect: {
     'store-settings': StoreSettingsSelect<false> | StoreSettingsSelect<true>;
+    emailSettings: EmailSettingsSelect<false> | EmailSettingsSelect<true>;
   };
   locale: null;
   user: User & {
@@ -612,6 +614,22 @@ export interface StoreSetting {
         id?: string | null;
       }[]
     | null;
+  /**
+   * If checked, the same service can be added multiple times to an appointment
+   */
+  allowDuplicateServiceInAppointment?: boolean | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "emailSettings".
+ */
+export interface EmailSetting {
+  id: number;
+  provider?: 'brevo' | null;
+  apiKey: string;
+  brevoSenderList?: string | null;
   updatedAt?: string | null;
   createdAt?: string | null;
 }
@@ -642,6 +660,19 @@ export interface StoreSettingsSelect<T extends boolean = true> {
         answer?: T;
         id?: T;
       };
+  allowDuplicateServiceInAppointment?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "emailSettings_select".
+ */
+export interface EmailSettingsSelect<T extends boolean = true> {
+  provider?: T;
+  apiKey?: T;
+  brevoSenderList?: T;
   updatedAt?: T;
   createdAt?: T;
   globalType?: T;
