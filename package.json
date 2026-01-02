@@ -5,31 +5,35 @@
   "license": "MIT",
   "type": "module",
   "scripts": {
-    "build": "cross-env NODE_OPTIONS=\"--no-deprecation --max-old-space-size=8000\" next build",
-    "dev": "cross-env NODE_OPTIONS=--no-deprecation next dev",
-    "devsafe": "rm -rf .next && cross-env NODE_OPTIONS=--no-deprecation next dev",
-    "generate:importmap": "cross-env NODE_OPTIONS=--no-deprecation payload generate:importmap",
-    "generate:types": "cross-env NODE_OPTIONS=--no-deprecation payload generate:types",
-    "lint": "cross-env NODE_OPTIONS=--no-deprecation next lint",
-    "payload": "cross-env NODE_OPTIONS=--no-deprecation payload",
-    "start": "cross-env NODE_OPTIONS=--no-deprecation next start",
+    "build": "next build",
+    "dev": "next dev",
+    "devsafe": "rm -rf .next && next dev",
+    "generate:importmap": "payload generate:importmap",
+    "generate:types": "payload generate:types",
+    "lint": "next lint",
+    "payload": "payload",
+    "start": "next start",
     "test": "pnpm run test:int && pnpm run test:e2e",
-    "test:e2e": "cross-env NODE_OPTIONS=\"--no-deprecation --no-experimental-strip-types\" pnpm exec playwright test",
-    "test:int": "cross-env NODE_OPTIONS=--no-deprecation vitest run --config ./vitest.config.mts"
+    "test:e2e": "pnpm exec playwright test",
+    "test:int": "vitest run --config ./vitest.config.mts"
   },
   "dependencies": {
+    "@getbrevo/brevo": "^3.0.1",
+    "@payloadcms/db-postgres": "3.69.0",
     "@payloadcms/next": "3.69.0",
+    "@payloadcms/payload-cloud": "^3.69.0",
     "@payloadcms/richtext-lexical": "3.69.0",
+    "@payloadcms/storage-s3": "^3.69.0",
     "@payloadcms/ui": "3.69.0",
-    "cross-env": "^7.0.3",
     "dotenv": "16.4.7",
     "graphql": "^16.8.1",
+    "lucide-react": "^0.562.0",
+    "nanoid": "^5.1.6",
     "next": "15.4.10",
     "payload": "3.69.0",
     "react": "19.2.1",
     "react-dom": "19.2.1",
-    "sharp": "0.34.2",
-    "@payloadcms/db-postgres": "3.69.0"
+    "sharp": "0.34.2"
   },
   "devDependencies": {
     "@playwright/test": "1.56.1",
@@ -58,5 +62,6 @@
       "esbuild",
       "unrs-resolver"
     ]
-  }
+  },
+  "packageManager": "pnpm@10.27.0+sha512.72d699da16b1179c14ba9e64dc71c9a40988cbdc65c264cb0e489db7de917f20dcf4d64d8723625f2969ba52d4b7e2a1170682d9ac2a5dcaeaab732b7e16f04a"
 }

@@ -12,6 +12,11 @@ const nextConfig = {
 
     return webpackConfig
   },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  output: 'standalone',
+  basePath: process.env.BASE_PATH || '',
 }
 
 export default withPayload(nextConfig, { devBundleServerPackages: false })

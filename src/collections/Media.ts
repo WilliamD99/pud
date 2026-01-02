@@ -1,5 +1,7 @@
 import type { CollectionConfig } from 'payload'
 
+// The files currently being saved to local system.
+// This works good for demo site, but for real production, suggesting to use cloud provider
 export const Media: CollectionConfig = {
   slug: 'media',
   access: {
@@ -9,8 +11,9 @@ export const Media: CollectionConfig = {
     {
       name: 'alt',
       type: 'text',
-      required: true,
     },
   ],
-  upload: true,
+  upload: {
+    mimeTypes: ['image/*'],
+  },
 }

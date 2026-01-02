@@ -69,6 +69,11 @@ export interface Config {
   collections: {
     users: User;
     media: Media;
+    technicians: Technician;
+    services: Service;
+    appointments: Appointment;
+    jobs: Job;
+    customers: Customer;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -78,17 +83,28 @@ export interface Config {
   collectionsSelect: {
     users: UsersSelect<false> | UsersSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
+    technicians: TechniciansSelect<false> | TechniciansSelect<true>;
+    services: ServicesSelect<false> | ServicesSelect<true>;
+    appointments: AppointmentsSelect<false> | AppointmentsSelect<true>;
+    jobs: JobsSelect<false> | JobsSelect<true>;
+    customers: CustomersSelect<false> | CustomersSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
     'payload-migrations': PayloadMigrationsSelect<false> | PayloadMigrationsSelect<true>;
   };
   db: {
-    defaultIDType: string;
+    defaultIDType: number;
   };
   fallbackLocale: null;
-  globals: {};
-  globalsSelect: {};
+  globals: {
+    'store-settings': StoreSetting;
+    emailSettings: EmailSetting;
+  };
+  globalsSelect: {
+    'store-settings': StoreSettingsSelect<false> | StoreSettingsSelect<true>;
+    emailSettings: EmailSettingsSelect<false> | EmailSettingsSelect<true>;
+  };
   locale: null;
   user: User & {
     collection: 'users';
@@ -121,7 +137,12 @@ export interface UserAuthOperations {
  * via the `definition` "users".
  */
 export interface User {
-  id: string;
+  id: number;
+  name?: string | null;
+  /**
+   * Creating a new user will also create a record either in the Technician Schema or the Customer Schema
+   */
+  role: 'admin' | 'staff' | 'customer';
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -145,8 +166,9 @@ export interface User {
  * via the `definition` "media".
  */
 export interface Media {
-  id: string;
-  alt: string;
+  id: number;
+  alt?: string | null;
+  prefix?: string | null;
   updatedAt: string;
   createdAt: string;
   url?: string | null;
@@ -161,10 +183,156 @@ export interface Media {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "technicians".
+ */
+export interface Technician {
+  id: number;
+  techniciansId?: string | null;
+  name: string;
+  profilePicture?: (number | null) | Media;
+  /**
+   * Add a brief bio for the technician
+   */
+  bio?: string | null;
+  email: string;
+  phone?: string | null;
+  address?: string | null;
+  services?:
+    | {
+        service?: (number | null) | Service;
+        /**
+         * Duration in minutes
+         */
+        duration?: number | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Set default availability for the technician
+   */
+  weeklyAvailability?:
+    | {
+        dayOfWeek: '1' | '2' | '3' | '4' | '5' | '6' | '0';
+        /**
+         * Add one or more work periods (e.g., 9–12 and 1–5). Leave empty = Day off.
+         */
+        timeRanges?:
+          | {
+              start: string;
+              end: string;
+              id?: string | null;
+            }[]
+          | null;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "services".
+ */
+export interface Service {
+  id: number;
+  servicesId?: string | null;
+  name?: string | null;
+  description?: string | null;
+  servicePicture?: (number | null) | Media;
+  category?: ('skincare' | 'hair' | 'nails' | 'makeup' | 'lashes') | null;
+  /**
+   * Set to true if this service has sub services
+   */
+  isParent?: boolean | null;
+  subServices?:
+    | {
+        subService?: (number | null) | Service;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * You can set only the min or max price if the service has one price
+   */
+  priceRange?: {
+    min?: number | null;
+    max?: number | null;
+  };
+  isSubService?: boolean | null;
+  /**
+   * Use this to disable the service from the frontend.
+   */
+  disabled?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "appointments".
+ */
+export interface Appointment {
+  id: number;
+  appointmentsId?: string | null;
+  time: string;
+  status?: ('pending' | 'confirmed' | 'cancelled' | 'completed') | null;
+  notes?: string | null;
+  customer?: (number | null) | Customer;
+  jobs: (number | Job)[];
+  tenantId?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "customers".
+ */
+export interface Customer {
+  id: number;
+  customersId?: string | null;
+  name: string;
+  email: string;
+  phone?: string | null;
+  notes?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "jobs".
+ */
+export interface Job {
+  id: number;
+  name?: string | null;
+  service: number | Service;
+  technician: number | Technician;
+  status?: ('pending' | 'in_progress' | 'completed' | 'cancelled') | null;
+  notes?: string | null;
+  /**
+   * Duration in minutes (This is automatically calculated based on setting duration at the technician level)
+   */
+  duration?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
-  id: string;
+  id: number;
   key: string;
   data:
     | {
@@ -181,20 +349,40 @@ export interface PayloadKv {
  * via the `definition` "payload-locked-documents".
  */
 export interface PayloadLockedDocument {
-  id: string;
+  id: number;
   document?:
     | ({
         relationTo: 'users';
-        value: string | User;
+        value: number | User;
       } | null)
     | ({
         relationTo: 'media';
-        value: string | Media;
+        value: number | Media;
+      } | null)
+    | ({
+        relationTo: 'technicians';
+        value: number | Technician;
+      } | null)
+    | ({
+        relationTo: 'services';
+        value: number | Service;
+      } | null)
+    | ({
+        relationTo: 'appointments';
+        value: number | Appointment;
+      } | null)
+    | ({
+        relationTo: 'jobs';
+        value: number | Job;
+      } | null)
+    | ({
+        relationTo: 'customers';
+        value: number | Customer;
       } | null);
   globalSlug?: string | null;
   user: {
     relationTo: 'users';
-    value: string | User;
+    value: number | User;
   };
   updatedAt: string;
   createdAt: string;
@@ -204,10 +392,10 @@ export interface PayloadLockedDocument {
  * via the `definition` "payload-preferences".
  */
 export interface PayloadPreference {
-  id: string;
+  id: number;
   user: {
     relationTo: 'users';
-    value: string | User;
+    value: number | User;
   };
   key?: string | null;
   value?:
@@ -227,7 +415,7 @@ export interface PayloadPreference {
  * via the `definition` "payload-migrations".
  */
 export interface PayloadMigration {
-  id: string;
+  id: number;
   name?: string | null;
   batch?: number | null;
   updatedAt: string;
@@ -238,6 +426,8 @@ export interface PayloadMigration {
  * via the `definition` "users_select".
  */
 export interface UsersSelect<T extends boolean = true> {
+  name?: T;
+  role?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;
@@ -261,6 +451,7 @@ export interface UsersSelect<T extends boolean = true> {
  */
 export interface MediaSelect<T extends boolean = true> {
   alt?: T;
+  prefix?: T;
   updatedAt?: T;
   createdAt?: T;
   url?: T;
@@ -272,6 +463,111 @@ export interface MediaSelect<T extends boolean = true> {
   height?: T;
   focalX?: T;
   focalY?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "technicians_select".
+ */
+export interface TechniciansSelect<T extends boolean = true> {
+  techniciansId?: T;
+  name?: T;
+  profilePicture?: T;
+  bio?: T;
+  email?: T;
+  phone?: T;
+  address?: T;
+  services?:
+    | T
+    | {
+        service?: T;
+        duration?: T;
+        id?: T;
+      };
+  weeklyAvailability?:
+    | T
+    | {
+        dayOfWeek?: T;
+        timeRanges?:
+          | T
+          | {
+              start?: T;
+              end?: T;
+              id?: T;
+            };
+        id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "services_select".
+ */
+export interface ServicesSelect<T extends boolean = true> {
+  servicesId?: T;
+  name?: T;
+  description?: T;
+  servicePicture?: T;
+  category?: T;
+  isParent?: T;
+  subServices?:
+    | T
+    | {
+        subService?: T;
+        id?: T;
+      };
+  priceRange?:
+    | T
+    | {
+        min?: T;
+        max?: T;
+      };
+  isSubService?: T;
+  disabled?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "appointments_select".
+ */
+export interface AppointmentsSelect<T extends boolean = true> {
+  appointmentsId?: T;
+  time?: T;
+  status?: T;
+  notes?: T;
+  customer?: T;
+  jobs?: T;
+  tenantId?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "jobs_select".
+ */
+export interface JobsSelect<T extends boolean = true> {
+  name?: T;
+  service?: T;
+  technician?: T;
+  status?: T;
+  notes?: T;
+  duration?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "customers_select".
+ */
+export interface CustomersSelect<T extends boolean = true> {
+  customersId?: T;
+  name?: T;
+  email?: T;
+  phone?: T;
+  notes?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -312,6 +608,106 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
   batch?: T;
   updatedAt?: T;
   createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "store-settings".
+ */
+export interface StoreSetting {
+  id: number;
+  /**
+   * Set the operating day and time for the store. Leave empty to set as day off.
+   */
+  operatingHours?:
+    | {
+        day: 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
+        /**
+         * Enter the open time in 24-hour format (e.g., 10 for 10:00)
+         */
+        open: string;
+        /**
+         * Enter the close time in 24-hour format (e.g., 20 for 20:00)
+         */
+        close: string;
+        id?: string | null;
+      }[]
+    | null;
+  socials?:
+    | {
+        platform?: ('facebook' | 'instagram' | 'twitter' | 'youtube' | 'linkedin' | 'tiktok' | 'website') | null;
+        url: string;
+        id?: string | null;
+      }[]
+    | null;
+  questions?:
+    | {
+        question?: string | null;
+        answer?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * If checked, the same service can be added multiple times to an appointment
+   */
+  allowDuplicateServiceInAppointment?: boolean | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "emailSettings".
+ */
+export interface EmailSetting {
+  id: number;
+  provider?: 'brevo' | null;
+  apiKey: string;
+  brevoSenderList?: string | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "store-settings_select".
+ */
+export interface StoreSettingsSelect<T extends boolean = true> {
+  operatingHours?:
+    | T
+    | {
+        day?: T;
+        open?: T;
+        close?: T;
+        id?: T;
+      };
+  socials?:
+    | T
+    | {
+        platform?: T;
+        url?: T;
+        id?: T;
+      };
+  questions?:
+    | T
+    | {
+        question?: T;
+        answer?: T;
+        id?: T;
+      };
+  allowDuplicateServiceInAppointment?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "emailSettings_select".
+ */
+export interface EmailSettingsSelect<T extends boolean = true> {
+  provider?: T;
+  apiKey?: T;
+  brevoSenderList?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

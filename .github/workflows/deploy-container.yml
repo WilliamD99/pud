@@ -1,0 +1,288 @@
+name: Deploy Payload Client
+
+on:
+  workflow_dispatch:
+    inputs:
+      client_id:
+        description: 'Client ID (lowercase, no spaces, no special chars)'
+        required: true
+      image_tag:
+        description: 'Docker image tag to deploy (default: latest)'
+        required: false
+        default: 'latest'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # ============================================
+  # Step 1: Create AWS IAM credentials for S3
+  # ============================================
+  setup-aws:
+    runs-on: ubuntu-latest
+    environment: AWS
+    env:
+      CLIENT: ${{ github.event.inputs.client_id }}
+
+    outputs:
+      access_key: ${{ steps.iam.outputs.access_key }}
+      secret_key: ${{ steps.iam.outputs.secret_key }}
+
+    steps:
+      - name: Configure AWS CLI
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Create IAM user & access keys
+        id: iam
+        run: |
+          set -euo pipefail
+          USER="payload-$CLIENT"
+
+          # Create user if not exists
+          aws iam create-user --user-name "$USER" 2>/dev/null || echo "User already exists"
+
+          # Delete existing access keys (max 2 per user)
+          for KEY in $(aws iam list-access-keys --user-name "$USER" \
+            --query 'AccessKeyMetadata[].AccessKeyId' --output text 2>/dev/null); do
+            aws iam delete-access-key --user-name "$USER" --access-key-id "$KEY"
+          done
+
+          # Create scoped S3 policy for this client
+          cat > policy.json <<EOF
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"],
+                "Resource": "arn:aws:s3:::${{ secrets.S3_BUCKET }}/media-$CLIENT/*"
+              },
+              {
+                "Effect": "Allow",
+                "Action": "s3:ListBucket",
+                "Resource": "arn:aws:s3:::${{ secrets.S3_BUCKET }}",
+                "Condition": { "StringLike": { "s3:prefix": "media-$CLIENT/*" } }
+              }
+            ]
+          }
+          EOF
+
+          aws iam put-user-policy --user-name "$USER" \
+            --policy-name "payload-s3-$CLIENT" --policy-document file://policy.json
+
+          # Create new access key
+          aws iam create-access-key --user-name "$USER" > keys.json
+
+          # Mask secrets in logs
+          ACCESS_KEY=$(jq -r .AccessKey.AccessKeyId keys.json)
+          SECRET_KEY=$(jq -r .AccessKey.SecretAccessKey keys.json)
+
+          echo "::add-mask::$ACCESS_KEY"
+          echo "::add-mask::$SECRET_KEY"
+
+          echo "access_key=$ACCESS_KEY" >> $GITHUB_OUTPUT
+          echo "secret_key=$SECRET_KEY" >> $GITHUB_OUTPUT
+
+          rm -f keys.json policy.json
+          echo "✅ IAM user '$USER' configured with S3 access"
+
+  # ============================================
+  # Step 2: Create PostgreSQL database
+  # ============================================
+  create-database:
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      CLIENT: ${{ github.event.inputs.client_id }}
+
+    outputs:
+      db_uri: ${{ steps.create_db.outputs.db_uri }}
+      db_name: ${{ steps.create_db.outputs.db_name }}
+      db_user: ${{ steps.create_db.outputs.db_user }}
+
+    steps:
+      - name: Create PostgreSQL database for client
+        id: create_db
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
+          POSTGRES_HOST: ${{ secrets.POSTGRES_HOST }}
+        run: |
+          set -euo pipefail
+
+          # Setup SSH
+          mkdir -p ~/.ssh
+          echo "$VPS_SSH_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -p ${VPS_PORT:-22} "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+
+          # Sanitize client ID for database name
+          DB_NAME="payload_$(echo "$CLIENT" | tr '-' '_' | tr '[:upper:]' '[:lower:]')"
+          DB_USER="user_$(echo "$CLIENT" | tr '-' '_' | tr '[:upper:]' '[:lower:]')"
+          DB_PASS=$(openssl rand -hex 16)
+
+          # Mask password in logs
+          echo "::add-mask::$DB_PASS"
+
+          # Create database and user via SSH
+          ssh -p ${VPS_PORT:-22} ${VPS_USER}@${VPS_HOST} << REMOTE_SCRIPT
+            set -euo pipefail
+            
+            docker exec postgres psql -U admin -c "
+              -- Create user if not exists
+              DO \\\$\\\$
+              BEGIN
+                IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = '$DB_USER') THEN
+                  CREATE USER $DB_USER WITH PASSWORD '$DB_PASS';
+                ELSE
+                  ALTER USER $DB_USER WITH PASSWORD '$DB_PASS';
+                END IF;
+              END
+              \\\$\\\$;
+            "
+            
+            # Check if database exists
+            DB_EXISTS=\$(docker exec postgres psql -U admin -tAc "SELECT 1 FROM pg_database WHERE datname = '$DB_NAME'")
+            
+            if [ -z "\$DB_EXISTS" ]; then
+              docker exec postgres psql -U admin -c "CREATE DATABASE $DB_NAME OWNER $DB_USER;"
+              echo "Created new database: $DB_NAME"
+            else
+              echo "Database already exists: $DB_NAME"
+            fi
+            
+            # Grant privileges
+            docker exec postgres psql -U admin -c "GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USER;"
+            docker exec postgres psql -U admin -d "$DB_NAME" -c "
+              GRANT ALL ON SCHEMA public TO $DB_USER;
+              ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO $DB_USER;
+              ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO $DB_USER;
+            "
+            
+            echo "✅ Database '$DB_NAME' ready for user '$DB_USER'"
+          REMOTE_SCRIPT
+
+          # Build connection URI
+          POSTGRES_HOST="${POSTGRES_HOST:-postgres}"
+          DB_URI="postgresql://${DB_USER}:${DB_PASS}@${POSTGRES_HOST}:5432/${DB_NAME}"
+
+          echo "::add-mask::$DB_URI"
+
+          echo "db_uri=$DB_URI" >> $GITHUB_OUTPUT
+          echo "db_name=$DB_NAME" >> $GITHUB_OUTPUT
+          echo "db_user=$DB_USER" >> $GITHUB_OUTPUT
+
+          # Cleanup
+          rm -f ~/.ssh/id_rsa
+
+  # ============================================
+  # Step 3: Deploy container with all credentials
+  # ============================================
+  deploy:
+    needs: [setup-aws, create-database]
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      CLIENT: ${{ github.event.inputs.client_id }}
+
+    steps:
+      - name: Generate Payload Secret
+        id: payload_secret
+        run: |
+          SECRET=$(openssl rand -hex 32)
+          echo "::add-mask::$SECRET"
+          echo "secret=$SECRET" >> $GITHUB_OUTPUT
+
+      - name: Deploy container to VPS
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DATABASE_URI: ${{ needs.create-database.outputs.db_uri }}
+          AWS_ACCESS_KEY_ID: ${{ needs.setup-aws.outputs.access_key }}
+          AWS_SECRET_ACCESS_KEY: ${{ needs.setup-aws.outputs.secret_key }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          S3_BUCKET: ${{ secrets.S3_BUCKET }}
+          PAYLOAD_SECRET: ${{ steps.payload_secret.outputs.secret }}
+          DOMAIN: ${{ secrets.DOMAIN }}
+          IMAGE_TAG: ${{ github.event.inputs.image_tag }}
+        run: |
+          set -euo pipefail
+
+          # Setup SSH
+          mkdir -p ~/.ssh
+          echo "$VPS_SSH_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -p ${VPS_PORT:-22} "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+
+          IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${IMAGE_TAG}"
+          CONTAINER_NAME="payload-${CLIENT}"
+          APP_URL="https://${CLIENT}.${DOMAIN}"
+
+          ssh -p ${VPS_PORT:-22} ${VPS_USER}@${VPS_HOST} << REMOTE_SCRIPT
+            set -euo pipefail
+
+            # Login to GHCR
+            echo "${GHCR_TOKEN}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+            # Pull latest image
+            docker pull "${IMAGE}"
+
+            # Stop and remove existing container
+            docker stop "${CONTAINER_NAME}" 2>/dev/null || true
+            docker rm "${CONTAINER_NAME}" 2>/dev/null || true
+
+            # Run new container with all environment variables
+            docker run -d \
+              --name "${CONTAINER_NAME}" \
+              --network payload-network \
+              --restart unless-stopped \
+              --label "traefik.enable=true" \
+              --label "traefik.http.routers.${CONTAINER_NAME}.rule=Host(\\\`${CLIENT}.${DOMAIN}\\\`)" \
+              --label "traefik.http.routers.${CONTAINER_NAME}.tls=true" \
+              --label "traefik.http.routers.${CONTAINER_NAME}.tls.certresolver=letsencrypt" \
+              --label "traefik.http.services.${CONTAINER_NAME}.loadbalancer.server.port=3000" \
+              -e NODE_ENV=production \
+              -e DATABASE_URI="${DATABASE_URI}" \
+              -e PAYLOAD_SECRET="${PAYLOAD_SECRET}" \
+              -e AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID}" \
+              -e AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY}" \
+              -e AWS_REGION="${AWS_REGION}" \
+              -e S3_BUCKET="${S3_BUCKET}" \
+              -e S3_BUCKET_PREFIX="${CLIENT}" \
+              -e NEXT_PUBLIC_APP_URL="${APP_URL}" \
+              -e CORS_ORIGINS="${APP_URL}" \
+              -e CSRF_WHITELIST="${APP_URL}" \
+              "${IMAGE}"
+
+            # Cleanup old images
+            docker image prune -f
+
+            echo "✅ Deployed ${CONTAINER_NAME}"
+            echo "🌐 URL: ${APP_URL}"
+          REMOTE_SCRIPT
+
+          # Cleanup
+          rm -f ~/.ssh/id_rsa
+
+      - name: Deployment Summary
+        run: |
+          echo "## 🚀 Deployment Complete!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Resource | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| **Client** | ${{ github.event.inputs.client_id }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **URL** | https://${{ github.event.inputs.client_id }}.${{ secrets.DOMAIN }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Database** | ${{ needs.create-database.outputs.db_name }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **DB User** | ${{ needs.create-database.outputs.db_user }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **S3 Prefix** | media-${{ github.event.inputs.client_id }}/ |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Image** | ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.event.inputs.image_tag }} |" >> $GITHUB_STEP_SUMMARY

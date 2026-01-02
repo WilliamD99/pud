@@ -1,0 +1,40 @@
+# Dependencies
+node_modules
+.pnpm-store
+
+# Build output
+.next
+out
+dist
+build
+
+# Git
+.git
+.gitignore
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# Environment files (use Docker secrets or env vars instead)
+.env
+.env.*
+!.env.example
+
+# Tests
+tests
+*.spec.ts
+*.test.ts
+vitest.config.*
+playwright.config.*
+
+# Misc
+*.log
+*.md
+!README.md
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
