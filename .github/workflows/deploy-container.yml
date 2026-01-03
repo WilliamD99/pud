@@ -1,9 +1,6 @@
 name: Deploy Payload Container
 
 on:
-  push:
-    branches: [server-only]
-
   workflow_dispatch:
     inputs:
       client_id:
