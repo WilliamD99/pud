@@ -2,7 +2,7 @@ name: Build and Push Docker Image
 
 on:
   push:
-    branches: [main, server-only]
+    branches: [server-only]
     paths-ignore:
       - '**.md'
       - '.github/workflows/deploy-container.yml'

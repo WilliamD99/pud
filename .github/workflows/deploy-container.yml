@@ -1,4 +1,4 @@
-name: Deploy Payload Client
+name: Deploy Payload Container
 
 on:
   workflow_dispatch:
