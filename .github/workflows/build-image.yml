@@ -2,7 +2,7 @@ name: Build and Push Docker Image
 
 on:
   push:
-    branches: [main]
+    branches: [main, server-only]
     paths-ignore:
       - '**.md'
       - '.github/workflows/deploy-container.yml'
@@ -67,5 +67,3 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Usage" >> $GITHUB_STEP_SUMMARY
           echo "Deploy to a client using the [Deploy Payload Client](${{ github.server_url }}/${{ github.repository }}/actions/workflows/deploy-container.yml) workflow." >> $GITHUB_STEP_SUMMARY
-
-
